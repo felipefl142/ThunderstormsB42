@@ -15,19 +15,19 @@ function ThunderUI:createChildren()
     local y = 20 -- Top padding
 
     -- Button: Close Strike
-    self.btnClose = ISButton:new(pad, y, self:getWidth() - (pad*2), btnHeight, "Force CLOSE", self, function() self:forceStrike(100) end)
+    self.btnClose = ISButton:new(pad, y, self:getWidth() - (pad*2), btnHeight, "Force CLOSE (200)", self, function() self:forceStrike(200) end)
     self.btnClose:initialise()
     self:addChild(self.btnClose)
     y = y + btnHeight + 5
 
     -- Button: Medium Strike
-    self.btnMed = ISButton:new(pad, y, self:getWidth() - (pad*2), btnHeight, "Force MEDIUM", self, function() self:forceStrike(400) end)
+    self.btnMed = ISButton:new(pad, y, self:getWidth() - (pad*2), btnHeight, "Force MEDIUM (1000)", self, function() self:forceStrike(1000) end)
     self.btnMed:initialise()
     self:addChild(self.btnMed)
     y = y + btnHeight + 5
 
     -- Button: Far Strike
-    self.btnFar = ISButton:new(pad, y, self:getWidth() - (pad*2), btnHeight, "Force FAR", self, function() self:forceStrike(800) end)
+    self.btnFar = ISButton:new(pad, y, self:getWidth() - (pad*2), btnHeight, "Force FAR (2500)", self, function() self:forceStrike(2500) end)
     self.btnFar:initialise()
     self:addChild(self.btnFar)
     
@@ -63,9 +63,10 @@ end
 -- INTEGRATION: Mod Options & Keybinds
 -- We add a right-click context menu option for Admins/Debug to open the UI
 local function OnFillWorldObjectContextMenu(player, context, worldObjects, test)
-    if getDebug() or isAdmin() then
+    -- Removed strict checks for testing purposes
+    -- if getDebug() or isAdmin() then
         context:addOption("Debug: Thunder UI", nil, ToggleUI)
-    end
+    -- end
 end
 
 -- MOD OPTIONS SUPPORT (Optional Hook)

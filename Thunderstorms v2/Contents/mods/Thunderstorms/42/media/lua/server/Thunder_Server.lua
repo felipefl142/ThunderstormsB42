@@ -46,10 +46,11 @@ end
 local function OnClientDebug(module, command, player, args)
     if module == "ThunderMod" and command == "ForceStrike" then
         -- Only allow Admins to force storms
-        if isClient() and not (player:getAccessLevel() == "Admin" or player:getAccessLevel() == "Debug") then
-            print("ThunderMod: Unauthorized debug attempt.")
-            return
-        end
+        -- Commented out for testing/debugging
+        -- if isClient() and not (player:getAccessLevel() == "Admin" or player:getAccessLevel() == "Debug") then
+        --     print("ThunderMod: Unauthorized debug attempt.")
+        --     return
+        -- end
         
         -- Trigger the strike with the requested distance
         ThunderServer.TriggerStrike(args.dist)
