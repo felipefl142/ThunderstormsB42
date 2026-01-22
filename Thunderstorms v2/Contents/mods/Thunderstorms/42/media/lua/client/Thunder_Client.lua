@@ -12,6 +12,7 @@ local ThunderClient = {}
 ThunderClient.flashIntensity = 0.0
 ThunderClient.flashDecay = 0.05 -- Adjusted decay
 ThunderClient.pendingSounds = {} -- Table to store queued sounds
+ThunderClient.flashSequence = {} -- Queue for multi-flash effect
 ThunderClient.overlay = nil
 
 -- 1. VISUALS: OVERLAY
@@ -51,7 +52,23 @@ function ThunderClient.DoStrike(args)
     if brightness < 0.1 then brightness = 0.1 end
     if brightness > 1.0 then brightness = 1.0 end
     
-    ThunderClient.flashIntensity = brightness
+    -- Queue multi-flash sequence
+    ThunderClient.flashSequence = {}
+    local numFlashes = ZombRand(2, 4) -- 2 or 3 flashes
+    local now = getTimestampMs()
+    
+    for i = 1, numFlashes do
+        local delay = 0
+        if i > 1 then
+            -- Tighter flicker: 20ms to 100ms
+            delay = ZombRand(20, 100) + ((i-1) * 30)
+        end
+        
+        table.insert(ThunderClient.flashSequence, {
+            start = now + delay,
+            intensity = brightness * (ZombRandFloat(0.8, 1.2)) -- Slight variation
+        })
+    end
 
     -- B. AUDIO DELAY CALCULATION
     local speed = ThunderMod.Config.SpeedOfSound or 340
@@ -88,7 +105,7 @@ end
 
 -- 3. LOOPS
 function ThunderClient.OnTick()
-    -- Process Audio Queue
+    -- Process Audio Queue (Time-based)
     local now = getTimestampMs()
     
     for i = #ThunderClient.pendingSounds, 1, -1 do
@@ -107,6 +124,17 @@ function ThunderClient.OnTick()
 end
 
 function ThunderClient.OnRenderTick()
+    -- Process Flash Queue
+    local now = getTimestampMs()
+    for i = #ThunderClient.flashSequence, 1, -1 do
+        local flash = ThunderClient.flashSequence[i]
+        if now >= flash.start then
+            ThunderClient.flashIntensity = flash.intensity
+            if ThunderClient.flashIntensity > 1.0 then ThunderClient.flashIntensity = 1.0 end
+            table.remove(ThunderClient.flashSequence, i)
+        end
+    end
+
     -- Process Visual Decay
     if ThunderClient.flashIntensity > 0 then
         ThunderClient.flashIntensity = ThunderClient.flashIntensity - ThunderClient.flashDecay

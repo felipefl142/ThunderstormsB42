@@ -4,6 +4,7 @@ local ThunderClient = {}
 ThunderClient.flashIntensity = 0.0
 ThunderClient.flashDecay = 0.10 -- Slower decay for better visibility
 ThunderClient.delayedSounds = {} 
+ThunderClient.flashSequence = {} -- Queue for multi-flash effect
 ThunderClient.overlay = nil
 
 -- 1. SETUP THE OVERLAY
@@ -51,41 +52,52 @@ function ThunderClient.DoStrike(args)
     local brightness = 0.9 - (distance / 1500)
     if brightness < 0.2 then brightness = 0.2 end
     
-    ThunderClient.flashIntensity = brightness
-
-    -- AUDIO: (Same logic as before, just updated for new sound ranges)
-    local soundName = "MyThunder/ThunderClose"
-    local delayTicks = 0
-
-    if distance < 200 then
-        soundName = "MyThunder/ThunderClose"
-        delayTicks = 0 
-    elseif distance < 800 then
-        soundName = "MyThunder/ThunderMedium"
-        delayTicks = 15
-    else
-        soundName = "MyThunder/ThunderFar"
-        delayTicks = 45 
-    end
-
-    if delayTicks <= 0 then
-        getSoundManager():PlaySound(soundName, false, 0)
-    else
-        table.insert(ThunderClient.delayedSounds, {
-            sound = soundName,
-            timer = delayTicks
+    -- Queue multi-flash sequence
+    ThunderClient.flashSequence = {}
+    local numFlashes = ZombRand(2, 4) -- 2 or 3 flashes
+    local now = getTimestampMs()
+    
+    for i = 1, numFlashes do
+        local delay = 0
+        if i > 1 then
+            -- Tighter flicker: 20ms to 100ms
+            delay = ZombRand(20, 100) + ((i-1) * 30)
+        end
+        
+        table.insert(ThunderClient.flashSequence, {
+            start = now + delay,
+            intensity = brightness * (ZombRandFloat(0.8, 1.2))
         })
     end
+
+    -- AUDIO: Physics-based delay (Speed of Sound ~340m/s)
+    local speed = 340
+    local delaySeconds = distance / speed
+    local triggerTime = getTimestampMs() + (delaySeconds * 1000)
+
+    -- Select Sound
+    local soundName = "MyThunder/ThunderFar"
+    if distance < 200 then
+        soundName = "MyThunder/ThunderClose"
+    elseif distance < 800 then
+        soundName = "MyThunder/ThunderMedium"
+    end
+
+    -- Queue Sound
+    table.insert(ThunderClient.delayedSounds, {
+        sound = soundName,
+        time = triggerTime
+    })
 end
 
 -- 3. UPDATER LOOPS
 function ThunderClient.OnTick()
-    -- Audio Delay Loop
+    -- Audio Delay Loop (Time-based)
+    local now = getTimestampMs()
     for i = #ThunderClient.delayedSounds, 1, -1 do
         local entry = ThunderClient.delayedSounds[i]
-        entry.timer = entry.timer - 1
         
-        if entry.timer <= 0 then
+        if now >= entry.time then
             getSoundManager():PlaySound(entry.sound, false, 0)
             table.remove(ThunderClient.delayedSounds, i)
         end
@@ -93,6 +105,17 @@ function ThunderClient.OnTick()
 end
 
 function ThunderClient.OnRenderTick()
+    -- Process Flash Queue
+    local now = getTimestampMs()
+    for i = #ThunderClient.flashSequence, 1, -1 do
+        local flash = ThunderClient.flashSequence[i]
+        if now >= flash.start then
+            ThunderClient.flashIntensity = flash.intensity
+            if ThunderClient.flashIntensity > 1.0 then ThunderClient.flashIntensity = 1.0 end
+            table.remove(ThunderClient.flashSequence, i)
+        end
+    end
+
     -- Flash Decay Loop
     if ThunderClient.flashIntensity > 0 then
         ThunderClient.flashIntensity = ThunderClient.flashIntensity - ThunderClient.flashDecay
