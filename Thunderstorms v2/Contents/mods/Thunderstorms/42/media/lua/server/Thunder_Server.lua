@@ -3,8 +3,8 @@ if isClient() then return end
 local ThunderServer = {}
 
 -- CONFIG
-ThunderServer.minClouds = 0.4
-ThunderServer.baseChance = 0.005
+ThunderServer.minClouds = 0.1
+ThunderServer.baseChance = 1.0 
 ThunderServer.cooldownTimer = 0
 ThunderServer.minCooldown = 200
 
@@ -44,17 +44,17 @@ end
 
 -- 3. LISTEN FOR CLIENT DEBUG BUTTON
 local function OnClientDebug(module, command, player, args)
-    if module == "ThunderMod" and command == "ForceStrike" then
-        print("ThunderServer: Received ForceStrike command. Dist=" .. tostring(args.dist))
-        -- Only allow Admins to force storms
-        -- Commented out for testing/debugging
-        -- if isClient() and not (player:getAccessLevel() == "Admin" or player:getAccessLevel() == "Debug") then
-        --     print("ThunderMod: Unauthorized debug attempt.")
-        --     return
-        -- end
-        
-        -- Trigger the strike with the requested distance
-        ThunderServer.TriggerStrike(args.dist)
+    if module == "ThunderMod" then
+        if command == "ForceStrike" then
+            print("ThunderServer: Received ForceStrike command. Dist=" .. tostring(args.dist))
+            ThunderServer.TriggerStrike(args.dist)
+        elseif command == "SetFrequency" then
+            local freq = tonumber(args.frequency)
+            if freq then
+                ThunderServer.baseChance = freq
+                print("ThunderServer: Frequency set to " .. tostring(ThunderServer.baseChance))
+            end
+        end
     end
 end
 
