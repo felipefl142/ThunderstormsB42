@@ -48,25 +48,25 @@ function ThunderClient.DoStrike(args)
     -- Calculate brightness based on distance
     -- 0 distance = 1.0 brightness (max)
     -- 2000 distance = 0.0 brightness
-    local brightness = (1.0 - (distance / 2000)) * 0.75
+    local brightness = (1.0 - (distance / 2000)) * 0.5
     if brightness < 0.1 then brightness = 0.1 end
-    if brightness > 0.75 then brightness = 0.75 end
+    if brightness > 0.5 then brightness = 0.5 end
     
     -- Queue multi-flash sequence
     ThunderClient.flashSequence = {}
-    local numFlashes = ZombRand(2, 4) -- 2 or 3 flashes
+    local numFlashes = ZombRand(1, 4) -- 1, 2, or 3 flashes
     local now = getTimestampMs()
+    local cumulativeDelay = 0
     
     for i = 1, numFlashes do
-        local delay = 0
         if i > 1 then
-            -- Tighter flicker: 20ms to 100ms
-            delay = ZombRand(20, 100) + ((i-1) * 30)
+            -- Stuttering timing: 20ms to 70ms between pulses
+            cumulativeDelay = cumulativeDelay + ZombRand(20, 71)
         end
         
         table.insert(ThunderClient.flashSequence, {
-            start = now + delay,
-            intensity = brightness * (ZombRandFloat(0.8, 1.2)) -- Slight variation
+            start = now + cumulativeDelay,
+            intensity = brightness * (ZombRandFloat(0.75, 1.25)) -- Variation +/- 25%
         })
     end
 
