@@ -48,9 +48,9 @@ function ThunderClient.DoStrike(args)
     -- Calculate brightness based on distance
     -- 0 distance = 1.0 brightness (max)
     -- 2000 distance = 0.0 brightness
-    local brightness = 1.0 - (distance / 2000)
+    local brightness = (1.0 - (distance / 2000)) * 0.75
     if brightness < 0.1 then brightness = 0.1 end
-    if brightness > 1.0 then brightness = 1.0 end
+    if brightness > 0.75 then brightness = 0.75 end
     
     -- Queue multi-flash sequence
     ThunderClient.flashSequence = {}

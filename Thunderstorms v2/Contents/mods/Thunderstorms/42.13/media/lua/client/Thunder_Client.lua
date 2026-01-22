@@ -48,9 +48,9 @@ function ThunderClient.DoStrike(args)
     -- Ensure overlay exists
     ThunderClient.CreateOverlay()
     
-    -- Closer = Brighter (Max 0.9 alpha to not blind player totally, Min 0.2)
-    local brightness = 0.9 - (distance / 1500)
-    if brightness < 0.2 then brightness = 0.2 end
+    -- Closer = Brighter (Max 0.7 alpha to not blind player totally, Min 0.15)
+    local brightness = (0.9 - (distance / 1500)) * 0.8
+    if brightness < 0.15 then brightness = 0.15 end
     
     -- Queue multi-flash sequence
     ThunderClient.flashSequence = {}
