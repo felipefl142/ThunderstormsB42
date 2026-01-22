@@ -1,0 +1,33 @@
+module MyThunder
+{
+    sound ThunderClose
+    {
+        category = Ambient,
+        maxInstances = 4,
+        range = 200.0,
+        clip { file = media/sound/Close-long.ogg, }
+        clip { file = media/sound/Close-long-2.ogg, }
+        clip { file = media/sound/Close-medium2.ogg, }
+        clip { file = media/sound/Close-short.ogg, }
+        clip { file = media/sound/Close-short2.ogg, }
+    }
+
+    sound ThunderMedium
+    {
+        category = Ambient,
+        maxInstances = 4,
+        range = 200.0,
+        clip { file = media/sound/MediumFar-long.ogg, }
+        clip { file = media/sound/MediumFar-short.ogg, }
+    }
+
+    sound ThunderFar
+    {
+        category = Ambient,
+        maxInstances = 4,
+        range = 200.0,
+        clip { file = media/sound/Far-medium.ogg, }
+        clip { file = media/sound/Far-medium2.ogg, }
+        clip { file = media/sound/Far-short.ogg, }
+    }
+}

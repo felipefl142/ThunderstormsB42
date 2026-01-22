@@ -1,0 +1,36 @@
+module Base
+{
+    /* CLOSE THUNDER - High volume, low range (very intense nearby) */
+    sound ThunderClose
+    {
+        category = World,
+        clip { file = Close-long.ogg, }
+        clip { file = Close-long-2.ogg, }
+        clip { file = Close-medium2.ogg, }
+        maxrange = 40,
+        volume = 1.0,
+    }
+
+    /* MEDIUM THUNDER - Balanced volume and range */
+    sound ThunderMedium
+    {
+        category = World,
+        clip { file = MediumFar-long.ogg, }
+        clip { file = MediumFar-short.ogg, }
+        clip { file = MediumFar-short2.ogg, }
+        clip { file = MediumFar-short3.ogg, }
+        maxrange = 80,
+        volume = 0.7,
+    }
+
+    /* FAR THUNDER - Lower volume, massive range (background atmosphere) */
+    sound ThunderFar
+    {
+        category = World,
+        clip { file = Far-medium.ogg, }
+        clip { file = Far-medium2.ogg, }
+        clip { file = Far-short.ogg, }
+        maxrange = 200,
+        volume = 0.4,
+    }
+}
