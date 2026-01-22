@@ -2,7 +2,8 @@ if isClient() then return end
 
 print("[ThunderServer] ========== LOADING ==========")
 
-local ThunderServer = {}
+-- GLOBAL so it can be accessed from Lua console (singleplayer)
+ThunderServer = {}
 ThunderServer.DEBUG = true
 
 -- CONFIG
@@ -103,7 +104,21 @@ end
 Events.OnTick.Add(ThunderServer.OnTick)
 Events.OnClientCommand.Add(OnClientCommand)
 
+-- ============================================================
+-- GLOBAL HELPER FUNCTION (for server-side Lua console in SP)
+-- ============================================================
+
+--- Directly trigger a strike from server (singleplayer only)
+--- Usage: ServerForceThunder(200) or ServerForceThunder()
+function ServerForceThunder(dist)
+    dist = dist or ZombRand(50, 2500)
+    print("[ThunderServer] ServerForceThunder called with dist=" .. tostring(dist))
+    ThunderServer.TriggerStrike(dist)
+    return true
+end
+
 print("[ThunderServer] ========== LOADED ==========")
 print("[ThunderServer] Config: minClouds=" .. ThunderServer.minClouds ..
       " baseChance=" .. ThunderServer.baseChance ..
       " minCooldown=" .. ThunderServer.minCooldown)
+print("[ThunderServer] Console command (SP): ServerForceThunder(dist)")
