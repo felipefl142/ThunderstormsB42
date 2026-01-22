@@ -3,4 +3,4 @@ id=3651047804
 title=Thunderstorms [B42.13+]
 description=Adds networked lightning effects before, during, and after storms.
 tags=Build 42;Balance;Misc;Realistic
-visibility=private
+visibility=unlisted
