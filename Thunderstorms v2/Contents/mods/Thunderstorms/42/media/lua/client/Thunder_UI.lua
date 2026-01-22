@@ -1,4 +1,5 @@
--- Simple Debug UI for Thunder Mod
+print("ThunderUI: Loading script...")
+
 local ThunderUI = ISCollapsableWindow:derive("ThunderUI")
 
 function ThunderUI:initialise()
@@ -12,39 +13,34 @@ function ThunderUI:createChildren()
     
     local btnHeight = 25
     local pad = 10
-    local y = 20 -- Top padding
+    local y = 20 
 
-    -- Button: Close Strike
-    self.btnClose = ISButton:new(pad, y, self:getWidth() - (pad*2), btnHeight, "Force CLOSE (200)", self, function() self:forceStrike(200) end)
-    self.btnClose:initialise()
-    self:addChild(self.btnClose)
-    y = y + btnHeight + 5
+    -- Helper to create buttons
+    local function createBtn(label, dist)
+        local btn = ISButton:new(pad, y, self:getWidth() - (pad*2), btnHeight, label, self, function() self:forceStrike(dist) end)
+        btn:initialise()
+        self:addChild(btn)
+        y = y + btnHeight + 5
+    end
 
-    -- Button: Medium Strike
-    self.btnMed = ISButton:new(pad, y, self:getWidth() - (pad*2), btnHeight, "Force MEDIUM (1000)", self, function() self:forceStrike(1000) end)
-    self.btnMed:initialise()
-    self:addChild(self.btnMed)
-    y = y + btnHeight + 5
-
-    -- Button: Far Strike
-    self.btnFar = ISButton:new(pad, y, self:getWidth() - (pad*2), btnHeight, "Force FAR (2500)", self, function() self:forceStrike(2500) end)
-    self.btnFar:initialise()
-    self:addChild(self.btnFar)
+    createBtn("Force CLOSE (200)", 200)
+    createBtn("Force MEDIUM (1000)", 1000)
+    createBtn("Force FAR (2500)", 2500)
     
-    self:setHeight(y + btnHeight + pad)
+    self:setHeight(y + pad)
 end
 
 function ThunderUI:forceStrike(dist)
-    -- Send command to server
+    print("ThunderUI: Sending ForceStrike " .. tostring(dist))
     local player = getPlayer()
     local args = { dist = dist }
     sendClientCommand(player, "ThunderMod", "ForceStrike", args)
 end
 
--- MANAGER: Toggle the Window
 local uiInstance = nil
 
 local function ToggleUI()
+    print("ThunderUI: Toggling Window")
     if not uiInstance then
         uiInstance = ThunderUI:new(100, 100, 200, 150)
         uiInstance:initialise()
@@ -60,21 +56,11 @@ local function ToggleUI()
     end
 end
 
--- INTEGRATION: Mod Options & Keybinds
--- We add a right-click context menu option for Admins/Debug to open the UI
 local function OnFillWorldObjectContextMenu(player, context, worldObjects, test)
-    -- Removed strict checks for testing purposes
-    -- if getDebug() or isAdmin() then
-        context:addOption("Debug: Thunder UI", nil, ToggleUI)
-    -- end
-end
-
--- MOD OPTIONS SUPPORT (Optional Hook)
-if ModOptions and ModOptions.getInstance then
-    local ThunderOpts = ModOptions:getInstance("BetterThunder")
-    -- If you want a dedicated toggle inside the options menu, 
-    -- you would add it here, but usually ModOptions is for settings, not actions.
-    -- Sticking to Context Menu is safer for UI toggling.
+    -- print("ThunderUI: Context Menu Event Fired") -- Uncomment if needed, can be spammy
+    context:addOption("Debug: Thunder UI", worldObjects, function() ToggleUI() end)
 end
 
 Events.OnFillWorldObjectContextMenu.Add(OnFillWorldObjectContextMenu)
+
+print("ThunderUI: Script Loaded Successfully")

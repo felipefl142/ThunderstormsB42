@@ -45,6 +45,7 @@ end
 -- 3. LISTEN FOR CLIENT DEBUG BUTTON
 local function OnClientDebug(module, command, player, args)
     if module == "ThunderMod" and command == "ForceStrike" then
+        print("ThunderServer: Received ForceStrike command. Dist=" .. tostring(args.dist))
         -- Only allow Admins to force storms
         -- Commented out for testing/debugging
         -- if isClient() and not (player:getAccessLevel() == "Admin" or player:getAccessLevel() == "Debug") then
