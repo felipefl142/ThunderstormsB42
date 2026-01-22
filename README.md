@@ -48,7 +48,7 @@ For developers or contributors, the repository is structured as follows:
 ## 📝 Credits
 
 *   Developed by [FelipeFRL]
-*   Sound assets courtesy of [Asset Source if known, otherwise omit]
+*   Sound assets courtesy of https://pixabay.com/
 
 ---
 *Created for the Project Zomboid community.*
