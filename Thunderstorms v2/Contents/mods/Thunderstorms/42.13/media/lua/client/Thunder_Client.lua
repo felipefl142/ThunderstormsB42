@@ -1,28 +1,34 @@
 if isServer() then return end
 
+print("[ThunderClient] ========== LOADING (Build 42.13) ==========")
+
 -- GLOBAL so it can be accessed from Lua console
 ThunderClient = {}
 ThunderClient.flashIntensity = 0.0
 ThunderClient.flashDecay = 0.10 -- Slower decay for better visibility
-ThunderClient.delayedSounds = {} 
+ThunderClient.delayedSounds = {}
 ThunderClient.flashSequence = {} -- Queue for multi-flash effect
 ThunderClient.overlay = nil
 
 -- 1. SETUP THE OVERLAY
 -- We create a UI element that acts as our "Flash Screen"
 function ThunderClient.CreateOverlay()
-    if ThunderClient.overlay then return end
-    
+    if ThunderClient.overlay then
+        print("[ThunderClient] Overlay already exists")
+        return
+    end
+
     local w = getCore():getScreenWidth()
     local h = getCore():getScreenHeight()
-    
+    print("[ThunderClient] Creating overlay " .. w .. "x" .. h)
+
     -- Create a simple rectangle element
     ThunderClient.overlay = ISUIElement:new(0, 0, w, h)
     ThunderClient.overlay:initialise()
     -- We want it to ignore mouse clicks
     ThunderClient.overlay:setWantKeyEvents(false)
     ThunderClient.overlay.ignoreMouseEvents = true
-    
+
     -- Override the render function to draw a white rectangle with variable alpha
     ThunderClient.overlay.prerender = function(self)
         if ThunderClient.flashIntensity > 0 then
@@ -30,24 +36,30 @@ function ThunderClient.CreateOverlay()
             self:drawRect(0, 0, self:getWidth(), self:getHeight(), ThunderClient.flashIntensity, 1, 1, 1)
         end
     end
-    
+
     -- Add to the global UI manager so it draws on top of the game world
     ThunderClient.overlay:addToUIManager()
+    print("[ThunderClient] ✓ Overlay created and added to UI manager")
 end
 
 -- 2. HANDLE SERVER COMMANDS
 local function OnServerCommand(module, command, args)
     if module == "ThunderMod" and command == "LightningStrike" then
+        print("[ThunderClient] ⚡ Received LightningStrike command from server!")
+        print("[ThunderClient]   Distance: " .. tostring(args.dist) .. " tiles")
         ThunderClient.DoStrike(args)
     end
 end
 
 function ThunderClient.DoStrike(args)
     local distance = args.dist
-    
+    print("[ThunderClient] DoStrike executing - dist=" .. tostring(distance))
+
     -- VISUALS: Set the intensity
     -- Ensure overlay exists
+    print("[ThunderClient] Creating overlay...")
     ThunderClient.CreateOverlay()
+    print("[ThunderClient] Overlay created/verified")
     
     -- Closer = Brighter (Max 0.5 alpha, Min 0.1)
     local brightness = (1.0 - (distance / 2000)) * 0.5
@@ -86,6 +98,8 @@ function ThunderClient.DoStrike(args)
     end
 
     -- Queue Sound
+    print("[ThunderClient] Queueing sound: " .. soundName .. " in " .. string.format("%.1f", delaySeconds) .. "s")
+    print("[ThunderClient] Queuing " .. numFlashes .. " flash(es) with brightness " .. string.format("%.2f", brightness))
     table.insert(ThunderClient.delayedSounds, {
         sound = soundName,
         time = triggerTime
@@ -98,8 +112,9 @@ function ThunderClient.OnTick()
     local now = getTimestampMs()
     for i = #ThunderClient.delayedSounds, 1, -1 do
         local entry = ThunderClient.delayedSounds[i]
-        
+
         if now >= entry.time then
+            print("[ThunderClient] 🔊 Playing sound: " .. entry.sound)
             getSoundManager():PlaySound(entry.sound, false, 0)
             table.remove(ThunderClient.delayedSounds, i)
         end
@@ -112,6 +127,7 @@ function ThunderClient.OnRenderTick()
     for i = #ThunderClient.flashSequence, 1, -1 do
         local flash = ThunderClient.flashSequence[i]
         if now >= flash.start then
+            print("[ThunderClient] ⚡ FLASH! Intensity: " .. string.format("%.2f", flash.intensity))
             ThunderClient.flashIntensity = flash.intensity
             if ThunderClient.flashIntensity > 1.0 then ThunderClient.flashIntensity = 1.0 end
             table.remove(ThunderClient.flashSequence, i)
@@ -121,17 +137,25 @@ function ThunderClient.OnRenderTick()
     -- Flash Decay Loop
     if ThunderClient.flashIntensity > 0 then
         ThunderClient.flashIntensity = ThunderClient.flashIntensity - ThunderClient.flashDecay
-        if ThunderClient.flashIntensity < 0 then 
-            ThunderClient.flashIntensity = 0 
+        if ThunderClient.flashIntensity < 0 then
+            ThunderClient.flashIntensity = 0
         end
     end
 end
 
 -- 4. INITIALIZATION
-Events.OnGameStart.Add(ThunderClient.CreateOverlay) -- Ensure overlay is created on load
+local function OnGameStart()
+    print("[ThunderClient] OnGameStart event fired - creating overlay")
+    ThunderClient.CreateOverlay()
+end
+
+Events.OnGameStart.Add(OnGameStart)
 Events.OnServerCommand.Add(OnServerCommand)
 Events.OnRenderTick.Add(ThunderClient.OnRenderTick)
 Events.OnTick.Add(ThunderClient.OnTick)
+
+print("[ThunderClient] ========== CLIENT INITIALIZED ==========")
+print("[ThunderClient] Events registered: OnGameStart, OnServerCommand, OnRenderTick, OnTick")
 
 -- ============================================================
 -- GLOBAL HELPER FUNCTIONS (for Lua console)
@@ -183,3 +207,4 @@ function SetThunderFrequency(freq)
 end
 
 print("[ThunderClient] Console commands available: ForceThunder(dist), TestThunder(dist), SetThunderFrequency(freq)")
+print("[ThunderClient] NOTE: Console runs server-side in singleplayer - use ForceThunder() to test")
