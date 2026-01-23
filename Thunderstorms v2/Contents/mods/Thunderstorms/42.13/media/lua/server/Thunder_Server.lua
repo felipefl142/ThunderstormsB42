@@ -47,16 +47,14 @@ function ThunderServer.TriggerStrike(forcedDist)
     ThunderServer.cooldownTimer = ThunderServer.minCooldown + ZombRand(0, addedDelay)
 
     -- If UI requested specific distance, use it. Otherwise random.
-    -- Increased range to support far thunder delays
-    local distance = forcedDist or ZombRand(50, 2500)
-    local azimuth = ZombRand(0, 360)
+    -- Increased range to support far thunder delays (max 3400 tiles for hearing)
+    local distance = forcedDist or ZombRand(50, 3400)
 
     local args = {
-        dist = distance,
-        azimuth = azimuth
+        dist = distance
     }
 
-    print("[ThunderServer] ⚡ LIGHTNING STRIKE ⚡ Distance: " .. distance .. " tiles, Azimuth: " .. azimuth .. "°")
+    print("[ThunderServer] ⚡ LIGHTNING STRIKE ⚡ Distance: " .. distance .. " tiles")
     sendServerCommand("ThunderMod", "LightningStrike", args)
 end
 
@@ -101,10 +99,9 @@ end
 
 --- Test thunder effect (console-accessible version)
 --- Usage: TestThunder(200) or TestThunder() for default distance
-function TestThunder(dist, azimuth)
+function TestThunder(dist)
     dist = dist or 500
-    azimuth = azimuth or ZombRand(0, 360)
-    print("[ThunderServer] TestThunder called with dist=" .. tostring(dist) .. ", azimuth=" .. tostring(azimuth))
+    print("[ThunderServer] TestThunder called with dist=" .. tostring(dist))
     ThunderServer.TriggerStrike(dist)
     return true
 end

@@ -55,29 +55,35 @@ function ThunderClient.DoStrike(args)
     local distance = args.dist
     print("[ThunderClient] DoStrike executing - dist=" .. tostring(distance))
 
+    -- Maximum hearing distance is 3400 tiles
+    if distance > 3400 then
+        print("[ThunderClient] Thunder too far away (>" .. distance .. " tiles) - no sound will play")
+        return
+    end
+
     -- VISUALS: Set the intensity
     -- Ensure overlay exists
     print("[ThunderClient] Creating overlay...")
     ThunderClient.CreateOverlay()
     print("[ThunderClient] Overlay created/verified")
-    
+
     -- Closer = Brighter (Max 0.5 alpha, Min 0.1)
     local brightness = (1.0 - (distance / 2000)) * 0.5
     if brightness < 0.1 then brightness = 0.1 end
     if brightness > 0.5 then brightness = 0.5 end
-    
+
     -- Queue multi-flash sequence
     ThunderClient.flashSequence = {}
     local numFlashes = ZombRand(1, 4) -- 1, 2, or 3 flashes
     local now = getTimestampMs()
     local cumulativeDelay = 0
-    
+
     for i = 1, numFlashes do
         if i > 1 then
             -- Stuttering timing: 20ms to 70ms between pulses
             cumulativeDelay = cumulativeDelay + ZombRand(20, 71)
         end
-        
+
         table.insert(ThunderClient.flashSequence, {
             start = now + cumulativeDelay,
             intensity = brightness * (ZombRandFloat(0.75, 1.25)) -- Variation +/- 25%
@@ -89,7 +95,7 @@ function ThunderClient.DoStrike(args)
     local delaySeconds = distance / speed
     local triggerTime = getTimestampMs() + (delaySeconds * 1000)
 
-    -- Select Sound
+    -- Select Sound based on distance
     local soundName = "MyThunder/ThunderFar"
     if distance < 200 then
         soundName = "MyThunder/ThunderClose"
@@ -97,12 +103,19 @@ function ThunderClient.DoStrike(args)
         soundName = "MyThunder/ThunderMedium"
     end
 
-    -- Queue Sound
-    print("[ThunderClient] Queueing sound: " .. soundName .. " in " .. string.format("%.1f", delaySeconds) .. "s")
+    -- Calculate dynamic volume based on distance
+    -- Volume: 1.0 at 0 tiles, 0.1 at 3400 tiles
+    local volume = 1.0 - (distance / 3400) * 0.9
+    if volume < 0.1 then volume = 0.1 end
+    if volume > 1.0 then volume = 1.0 end
+
+    -- Queue Sound with dynamic volume
+    print("[ThunderClient] Queueing sound: " .. soundName .. " in " .. string.format("%.1f", delaySeconds) .. "s at volume " .. string.format("%.2f", volume))
     print("[ThunderClient] Queuing " .. numFlashes .. " flash(es) with brightness " .. string.format("%.2f", brightness))
     table.insert(ThunderClient.delayedSounds, {
         sound = soundName,
-        time = triggerTime
+        time = triggerTime,
+        volume = volume
     })
 end
 
@@ -114,8 +127,8 @@ function ThunderClient.OnTick()
         local entry = ThunderClient.delayedSounds[i]
 
         if now >= entry.time then
-            print("[ThunderClient] 🔊 Playing sound: " .. entry.sound)
-            getSoundManager():PlaySound(entry.sound, false, 1.0)
+            print("[ThunderClient] 🔊 Playing sound: " .. entry.sound .. " at volume " .. string.format("%.2f", entry.volume))
+            getSoundManager():PlaySound(entry.sound, false, entry.volume)
             table.remove(ThunderClient.delayedSounds, i)
         end
     end
@@ -195,13 +208,12 @@ end
 
 --- Test thunder effect directly on client (bypasses server, for debugging)
 --- Usage: TestThunder(200) or TestThunder() for default
-function TestThunder(dist, azimuth)
+function TestThunder(dist)
     dist = dist or 500
-    azimuth = azimuth or ZombRand(0, 360)
     print("[ThunderClient] TestThunder called - DIRECT CLIENT TEST")
-    print("[ThunderClient]   dist=" .. tostring(dist) .. ", azimuth=" .. tostring(azimuth))
+    print("[ThunderClient]   dist=" .. tostring(dist))
 
-    ThunderClient.DoStrike({dist = dist, azimuth = azimuth})
+    ThunderClient.DoStrike({dist = dist})
     return true
 end
 
