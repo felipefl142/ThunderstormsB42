@@ -7,7 +7,7 @@ print("[ThunderClient] ========== LOADING (Build 42.13) ==========")
 -- GLOBAL so it can be accessed from Lua console
 ThunderClient = {}
 ThunderClient.flashIntensity = 0.0
-ThunderClient.flashDecay = 0.10 -- Slower decay for better visibility
+ThunderClient.flashDecay = 0.05 -- Slower decay for better visibility
 ThunderClient.delayedSounds = {}
 ThunderClient.flashSequence = {} -- Queue for multi-flash effect
 ThunderClient.overlay = nil
@@ -84,19 +84,22 @@ function ThunderClient.DoStrike(args)
 
     -- Queue multi-flash sequence
     ThunderClient.flashSequence = {}
-    local numFlashes = ZombRand(1, 4) -- 1, 2, or 3 flashes
+    -- Simplified pattern: Mostly single flashes, occasional double flash
+    local numFlashes = 1
+    if ZombRand(100) < 30 then numFlashes = 2 end -- 30% chance of double flash
+    
     local now = getTimestampMs()
     local cumulativeDelay = 0
 
     for i = 1, numFlashes do
         if i > 1 then
-            -- Stuttering timing: 20ms to 70ms between pulses
-            cumulativeDelay = cumulativeDelay + ZombRand(20, 71)
+            -- Longer gap between pulses for "double strike" feel (50-150ms)
+            cumulativeDelay = cumulativeDelay + ZombRand(50, 151)
         end
 
         table.insert(ThunderClient.flashSequence, {
             start = now + cumulativeDelay,
-            intensity = brightness * (ZombRandFloat(0.75, 1.25)) -- Variation +/- 25%
+            intensity = brightness * (ZombRandFloat(0.9, 1.1)) -- Slight intensity variation
         })
     end
 

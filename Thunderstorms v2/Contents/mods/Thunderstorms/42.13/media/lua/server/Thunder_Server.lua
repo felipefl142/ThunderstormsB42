@@ -7,9 +7,9 @@ ThunderServer = {}
 
 -- CONFIG
 ThunderServer.minClouds = 0.2
-ThunderServer.baseChance = 0.005  -- Very low base chance per tick (0.005% * cloud intensity)
+ThunderServer.baseChance = 0.01  -- Adjusted chance (0.01% * intensity per tick)
 ThunderServer.cooldownTimer = 0
-ThunderServer.minCooldown = 240  -- Minimum ~4 seconds between strikes
+ThunderServer.minCooldown = 600  -- Minimum 10 seconds between strikes to prevent spam
 
 -- 1. WEATHER MONITORING
 function ThunderServer.OnTick()
