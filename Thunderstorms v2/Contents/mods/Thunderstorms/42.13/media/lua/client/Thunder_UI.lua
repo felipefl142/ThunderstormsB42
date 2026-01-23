@@ -164,7 +164,8 @@ function ThunderModUI_Toggle()
     end
 end
 
--- 4. EVENTS
+-- 4. EVENTS (TEMPORARILY DISABLED)
+--[[
 local function OnContext(playerNum, context, worldObjects, test)
     if test then return true end
     context:addOption("Thunder Control", nil, ThunderModUI_Toggle)
@@ -187,6 +188,7 @@ local function OnKeyPressed(key)
 end
 
 Events.OnKeyPressed.Add(OnKeyPressed)
+--]]
 
-print("[ThunderUI] ========== LOADED ==========")
-print("[ThunderUI] Hotkey: K | Context menu: 'Thunder Control'")
+print("[ThunderUI] ========== LOADED (UI DISABLED) ==========")
+print("[ThunderUI] UI temporarily disabled - use console commands instead")
