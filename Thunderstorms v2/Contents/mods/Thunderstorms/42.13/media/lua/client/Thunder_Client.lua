@@ -1,5 +1,7 @@
 if isServer() then return end
 
+require "ISUI/ISUIElement"
+
 print("[ThunderClient] ========== LOADING (Build 42.13) ==========")
 
 -- GLOBAL so it can be accessed from Lua console
@@ -128,7 +130,16 @@ function ThunderClient.OnTick()
 
         if now >= entry.time then
             print("[ThunderClient] 🔊 Playing sound: " .. entry.sound .. " at volume " .. string.format("%.2f", entry.volume))
-            getSoundManager():PlaySound(entry.sound, false, entry.volume)
+
+            -- Play 3D sound at player position (omnidirectional but gets muffled indoors)
+            local player = getPlayer()
+            if player then
+                getSoundManager():PlayWorldSound(entry.sound, player:getSquare(), 0, entry.volume, 20, false)
+            else
+                -- Fallback to 2D sound if no player
+                getSoundManager():PlaySound(entry.sound, false, entry.volume)
+            end
+
             table.remove(ThunderClient.delayedSounds, i)
         end
     end
