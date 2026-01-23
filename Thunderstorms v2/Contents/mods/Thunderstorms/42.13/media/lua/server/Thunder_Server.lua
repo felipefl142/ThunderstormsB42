@@ -1,6 +1,7 @@
 if isClient() then return end
 
-local ThunderServer = {}
+-- GLOBAL so it can be accessed from Lua console (singleplayer)
+ThunderServer = {}
 
 -- CONFIG
 ThunderServer.minClouds = 0.2
@@ -54,19 +55,43 @@ function ThunderServer.TriggerStrike(forcedDist)
     sendServerCommand("ThunderMod", "LightningStrike", args)
 end
 
--- 3. LISTEN FOR CLIENT DEBUG BUTTON
-local function OnClientDebug(module, command, player, args)
-    if module == "ThunderMod" and command == "ForceStrike" then
-        -- Only allow Admins to force storms
-        if isClient() and not (player:getAccessLevel() == "Admin" or player:getAccessLevel() == "Debug") then
-            print("ThunderMod: Unauthorized debug attempt.")
-            return
+-- 3. LISTEN FOR CLIENT COMMANDS
+local function OnClientCommand(module, command, player, args)
+    if module ~= "ThunderMod" then return end
+
+    if command == "ForceStrike" then
+        local dist = args.dist or 1000
+        print("[ThunderServer] ForceStrike requested, dist=" .. tostring(dist))
+        ThunderServer.TriggerStrike(dist)
+
+    elseif command == "SetFrequency" then
+        local freq = tonumber(args.frequency)
+        if freq then
+            local oldFreq = ThunderServer.baseChance
+            ThunderServer.baseChance = freq
+            print("[ThunderServer] Frequency changed: " .. oldFreq .. " -> " .. freq)
+        else
+            print("[ThunderServer] ERROR: Invalid frequency value: " .. tostring(args.frequency))
         end
-        
-        -- Trigger the strike with the requested distance
-        ThunderServer.TriggerStrike(args.dist)
+    else
+        print("[ThunderServer] Unknown command: " .. command)
     end
 end
 
 Events.OnTick.Add(ThunderServer.OnTick)
-Events.OnClientCommand.Add(OnClientDebug)
+Events.OnClientCommand.Add(OnClientCommand)
+
+-- ============================================================
+-- GLOBAL HELPER FUNCTION (for server-side Lua console in SP)
+-- ============================================================
+
+--- Directly trigger a strike from server (singleplayer only)
+--- Usage: ServerForceThunder(200) or ServerForceThunder()
+function ServerForceThunder(dist)
+    dist = dist or ZombRand(50, 2500)
+    print("[ThunderServer] ServerForceThunder called with dist=" .. tostring(dist))
+    ThunderServer.TriggerStrike(dist)
+    return true
+end
+
+print("[ThunderServer] Console command (SP): ServerForceThunder(dist)")

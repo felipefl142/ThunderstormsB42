@@ -1,6 +1,7 @@
 if isServer() then return end
 
-local ThunderClient = {}
+-- GLOBAL so it can be accessed from Lua console
+ThunderClient = {}
 ThunderClient.flashIntensity = 0.0
 ThunderClient.flashDecay = 0.10 -- Slower decay for better visibility
 ThunderClient.delayedSounds = {} 
@@ -131,3 +132,54 @@ Events.OnGameStart.Add(ThunderClient.CreateOverlay) -- Ensure overlay is created
 Events.OnServerCommand.Add(OnServerCommand)
 Events.OnRenderTick.Add(ThunderClient.OnRenderTick)
 Events.OnTick.Add(ThunderClient.OnTick)
+
+-- ============================================================
+-- GLOBAL HELPER FUNCTIONS (for Lua console)
+-- ============================================================
+
+--- Force a thunder strike via server (works in SP and MP)
+--- Usage: ForceThunder(200) or ForceThunder() for random distance
+function ForceThunder(dist)
+    dist = dist or ZombRand(50, 2500)
+    print("[ThunderClient] ForceThunder called with dist=" .. tostring(dist))
+
+    local player = getPlayer()
+    if not player then
+        print("[ThunderClient] ERROR: No player found!")
+        return false
+    end
+
+    print("[ThunderClient] Sending ForceStrike command to server...")
+    sendClientCommand(player, "ThunderMod", "ForceStrike", {dist = dist})
+    return true
+end
+
+--- Test thunder effect directly on client (bypasses server, for debugging)
+--- Usage: TestThunder(200) or TestThunder() for default
+function TestThunder(dist, azimuth)
+    dist = dist or 500
+    azimuth = azimuth or ZombRand(0, 360)
+    print("[ThunderClient] TestThunder called - DIRECT CLIENT TEST")
+    print("[ThunderClient]   dist=" .. tostring(dist) .. ", azimuth=" .. tostring(azimuth))
+
+    ThunderClient.DoStrike({dist = dist, azimuth = azimuth})
+    return true
+end
+
+--- Set thunder frequency via server
+--- Usage: SetThunderFrequency(3.0)
+function SetThunderFrequency(freq)
+    freq = freq or 1.0
+    print("[ThunderClient] SetThunderFrequency called with freq=" .. tostring(freq))
+
+    local player = getPlayer()
+    if not player then
+        print("[ThunderClient] ERROR: No player found!")
+        return false
+    end
+
+    sendClientCommand(player, "ThunderMod", "SetFrequency", {frequency = freq})
+    return true
+end
+
+print("[ThunderClient] Console commands available: ForceThunder(dist), TestThunder(dist), SetThunderFrequency(freq)")
