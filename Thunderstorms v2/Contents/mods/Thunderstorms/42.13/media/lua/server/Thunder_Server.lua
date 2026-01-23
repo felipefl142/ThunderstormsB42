@@ -1,5 +1,7 @@
 if isClient() then return end
 
+print("[ThunderServer] ========== LOADING (Build 42.13) ==========")
+
 -- GLOBAL so it can be accessed from Lua console (singleplayer)
 ThunderServer = {}
 
@@ -34,24 +36,27 @@ function ThunderServer.TriggerStrike(forcedDist)
     -- Dynamic Cooldown based on intensity
     local clim = getClimateManager()
     local clouds = clim:getCloudIntensity()
-    
+
     -- Invert clouds: 1.0 -> 0.0, 0.2 -> 0.8
     -- High intensity (1.0) -> Cooldown ~ 60 + rand(0) -> 60 ticks
     -- Low intensity (0.2) -> Cooldown ~ 60 + rand(800) -> up to 14s
     local intensityFactor = (1.1 - clouds)
     if intensityFactor < 0 then intensityFactor = 0 end
-    
+
     local addedDelay = math.floor(1000 * intensityFactor)
     ThunderServer.cooldownTimer = ThunderServer.minCooldown + ZombRand(0, addedDelay)
 
     -- If UI requested specific distance, use it. Otherwise random.
     -- Increased range to support far thunder delays
     local distance = forcedDist or ZombRand(50, 2500)
-    
+    local azimuth = ZombRand(0, 360)
+
     local args = {
         dist = distance,
-        azimuth = ZombRand(0, 360)
+        azimuth = azimuth
     }
+
+    print("[ThunderServer] ⚡ LIGHTNING STRIKE ⚡ Distance: " .. distance .. " tiles, Azimuth: " .. azimuth .. "°")
     sendServerCommand("ThunderMod", "LightningStrike", args)
 end
 
@@ -123,4 +128,6 @@ function ForceThunder(dist)
     return true
 end
 
+print("[ThunderServer] ========== LOADED (Build 42.13) ==========")
 print("[ThunderServer] Console commands: ForceThunder(dist), TestThunder(dist), SetThunderFrequency(freq)")
+print("[ThunderServer] Type any of these commands in the console to test thunder effects")

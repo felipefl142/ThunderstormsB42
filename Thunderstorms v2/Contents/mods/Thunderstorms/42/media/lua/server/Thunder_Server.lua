@@ -117,8 +117,37 @@ function ServerForceThunder(dist)
     return true
 end
 
+--- Test thunder effect (console-accessible version)
+--- Usage: TestThunder(200) or TestThunder() for default distance
+function TestThunder(dist, azimuth)
+    dist = dist or 500
+    azimuth = azimuth or ZombRand(0, 360)
+    print("[ThunderServer] TestThunder called with dist=" .. tostring(dist) .. ", azimuth=" .. tostring(azimuth))
+    ThunderServer.TriggerStrike(dist)
+    return true
+end
+
+--- Set thunder frequency from console
+--- Usage: SetThunderFrequency(3.0)
+function SetThunderFrequency(freq)
+    freq = freq or 1.0
+    local oldFreq = ThunderServer.baseChance
+    ThunderServer.baseChance = freq
+    print("[ThunderServer] Frequency changed: " .. oldFreq .. " -> " .. freq)
+    return true
+end
+
+--- Force thunder strike from console
+--- Usage: ForceThunder(200) or ForceThunder() for random distance
+function ForceThunder(dist)
+    dist = dist or ZombRand(50, 2500)
+    print("[ThunderServer] ForceThunder called with dist=" .. tostring(dist))
+    ThunderServer.TriggerStrike(dist)
+    return true
+end
+
 print("[ThunderServer] ========== LOADED ==========")
 print("[ThunderServer] Config: minClouds=" .. ThunderServer.minClouds ..
       " baseChance=" .. ThunderServer.baseChance ..
       " minCooldown=" .. ThunderServer.minCooldown)
-print("[ThunderServer] Console command (SP): ServerForceThunder(dist)")
+print("[ThunderServer] Console commands: ForceThunder(dist), TestThunder(dist), SetThunderFrequency(freq)")
