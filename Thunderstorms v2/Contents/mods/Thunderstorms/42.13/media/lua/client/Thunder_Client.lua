@@ -115,7 +115,7 @@ function ThunderClient.OnTick()
 
         if now >= entry.time then
             print("[ThunderClient] 🔊 Playing sound: " .. entry.sound)
-            getSoundManager():PlaySound(entry.sound, false, 0)
+            getSoundManager():PlaySound(entry.sound, false, 1.0)
             table.remove(ThunderClient.delayedSounds, i)
         end
     end

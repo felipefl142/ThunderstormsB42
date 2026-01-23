@@ -45,7 +45,7 @@ function ThunderModUI:createChildren()
     -- 1. BUTTONS
     local window = self  -- Capture the window instance
     local function createBtn(label, dist)
-        local btn = ISButton:new(pad, y, width - (pad*2), btnHeight, label, window, function() window:forceStrike(dist) end)
+        local btn = ISButton:new(pad, y, width - (pad*2), btnHeight, label, window, function(target) target:forceStrike(dist) end)
         btn:initialise()
         btn.borderColor = {r=0.4, g=0.4, b=0.4, a=1}
         window:addChild(btn)
@@ -77,7 +77,7 @@ function ThunderModUI:createChildren()
 
     local slider = ISPanel:new(pad, y, sliderW, sliderH)
     slider:initialise()
-    slider:setBackgroundRGBA(0.2, 0.2, 0.2, 0.8)  -- Darker, more visible background
+    slider:setBackgroundColor(0.2, 0.2, 0.2, 0.8)  -- Darker, more visible background
 
     slider.render = function(s)
         -- Draw track background
