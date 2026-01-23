@@ -37,9 +37,9 @@ function ThunderClient.CreateOverlay()
         end
     end
 
-    -- Add to the global UI manager so it draws on top of the game world
-    ThunderClient.overlay:addToUIManager()
-    print("[ThunderClient] ✓ Overlay created and added to UI manager")
+    -- Don't add to UI manager yet - we'll add/remove it dynamically
+    ThunderClient.overlay.isInUIManager = false
+    print("[ThunderClient] ✓ Overlay created (not added to UI manager)")
 end
 
 -- 2. HANDLE SERVER COMMANDS
@@ -130,6 +130,14 @@ function ThunderClient.OnRenderTick()
             print("[ThunderClient] ⚡ FLASH! Intensity: " .. string.format("%.2f", flash.intensity))
             ThunderClient.flashIntensity = flash.intensity
             if ThunderClient.flashIntensity > 1.0 then ThunderClient.flashIntensity = 1.0 end
+
+            -- Add overlay to UI when flash starts
+            if ThunderClient.overlay and not ThunderClient.overlay.isInUIManager then
+                ThunderClient.overlay:addToUIManager()
+                ThunderClient.overlay.isInUIManager = true
+                print("[ThunderClient] Overlay added to UI manager")
+            end
+
             table.remove(ThunderClient.flashSequence, i)
         end
     end
@@ -139,14 +147,21 @@ function ThunderClient.OnRenderTick()
         ThunderClient.flashIntensity = ThunderClient.flashIntensity - ThunderClient.flashDecay
         if ThunderClient.flashIntensity < 0 then
             ThunderClient.flashIntensity = 0
+
+            -- Remove overlay from UI when flash ends
+            if ThunderClient.overlay and ThunderClient.overlay.isInUIManager then
+                ThunderClient.overlay:removeFromUIManager()
+                ThunderClient.overlay.isInUIManager = false
+                print("[ThunderClient] Overlay removed from UI manager")
+            end
         end
     end
 end
 
 -- 4. INITIALIZATION
 local function OnGameStart()
-    print("[ThunderClient] OnGameStart event fired - creating overlay")
-    ThunderClient.CreateOverlay()
+    print("[ThunderClient] OnGameStart event fired - overlay will be created on first thunder strike")
+    -- Don't create overlay yet, it will be created on demand in DoStrike
 end
 
 Events.OnGameStart.Add(OnGameStart)
