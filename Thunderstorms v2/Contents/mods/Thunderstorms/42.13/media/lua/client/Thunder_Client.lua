@@ -21,7 +21,7 @@ function ThunderClient.CreateOverlay()
     ThunderClient.overlay:initialise()
     -- We want it to ignore mouse clicks
     ThunderClient.overlay:setWantKeyEvents(false)
-    ThunderClient.overlay:setMouseOver(false)
+    ThunderClient.overlay.ignoreMouseEvents = true
     
     -- Override the render function to draw a white rectangle with variable alpha
     ThunderClient.overlay.prerender = function(self)

@@ -43,11 +43,12 @@ function ThunderModUI:createChildren()
     DebugPrint("Creating children, starting y=" .. y)
 
     -- 1. BUTTONS
+    local window = self  -- Capture the window instance
     local function createBtn(label, dist)
-        local btn = ISButton:new(pad, y, width - (pad*2), btnHeight, label, self, function() self:forceStrike(dist) end)
+        local btn = ISButton:new(pad, y, width - (pad*2), btnHeight, label, window, function() window:forceStrike(dist) end)
         btn:initialise()
         btn.borderColor = {r=0.4, g=0.4, b=0.4, a=1}
-        self:addChild(btn)
+        window:addChild(btn)
         y = y + btnHeight + 5
         DebugPrint("  Created button: " .. label)
     end
@@ -76,34 +77,38 @@ function ThunderModUI:createChildren()
 
     local slider = ISPanel:new(pad, y, sliderW, sliderH)
     slider:initialise()
-    slider:setBackgroundColor(0, 0, 0, 0.5)
+    slider:setBackgroundRGBA(0.2, 0.2, 0.2, 0.8)  -- Darker, more visible background
 
     slider.render = function(s)
-        s:drawRect(0, s:getHeight()/2 - 1, s:getWidth(), 2, 1, 0.5, 0.5, 0.5)
-        local pct = self.sliderVal / self.sliderMax
+        -- Draw track background
+        s:drawRect(0, s:getHeight()/2 - 2, s:getWidth(), 4, 1.0, 0.3, 0.3, 0.3)
+        -- Calculate knob position
+        local pct = window.sliderVal / window.sliderMax
         pct = math.max(0, math.min(1, pct))
-        local kx = pct * (s:getWidth() - 10)
-        s:drawRect(kx, 2, 10, 16, 1, 0.9, 0.9, 0.9)
+        local kx = pct * (s:getWidth() - 15)
+        -- Draw knob with border for visibility
+        s:drawRectBorder(kx, 0, 15, s:getHeight(), 1.0, 1.0, 1.0, 1.0)
+        s:drawRect(kx + 1, 1, 13, s:getHeight() - 2, 1.0, 0.7, 0.7, 0.7)
     end
 
     slider.onMouseDown = function(s, x, y) s.dragging = true end
     slider.onMouseUp = function(s, x, y)
         s.dragging = false
-        self:updateFrequency()
+        window:updateFrequency()
     end
     slider.onMouseUpOutside = slider.onMouseUp
     slider.onMouseMove = function(s, dx, dy)
         if s.dragging then
             local mx = s:getMouseX()
-            local pct = mx / (s:getWidth() - 10)
+            local pct = mx / (s:getWidth() - 15)
             pct = math.max(0, math.min(1, pct))
-            self.sliderVal = math.floor((pct * self.sliderMax) * 10 + 0.5) / 10
-            self.freqLabel.name = tostring(self.sliderVal)
+            window.sliderVal = math.floor((pct * window.sliderMax) * 10 + 0.5) / 10
+            window.freqLabel.name = tostring(window.sliderVal)
         end
     end
     slider.onMouseMoveOutside = slider.onMouseMove
 
-    self:addChild(slider)
+    window:addChild(slider)
     y = y + sliderH + 10
 
     self:setHeight(y)
