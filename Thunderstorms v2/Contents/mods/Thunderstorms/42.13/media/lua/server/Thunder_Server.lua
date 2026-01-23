@@ -9,7 +9,7 @@ ThunderServer = {}
 ThunderServer.minClouds = 0.2
 ThunderServer.baseChance = 0.5  -- Reduced from 1.0 to make thunder less frequent
 ThunderServer.cooldownTimer = 0
-ThunderServer.minCooldown = 60
+ThunderServer.minCooldown = 140  -- Increased from 60 to make thunder less frequent
 
 -- 1. WEATHER MONITORING
 function ThunderServer.OnTick()

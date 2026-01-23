@@ -27,12 +27,16 @@ function ThunderClient.CreateOverlay()
     -- Create a simple rectangle element
     ThunderClient.overlay = ISUIElement:new(0, 0, w, h)
     ThunderClient.overlay:initialise()
-    -- We want it to ignore mouse clicks
-    ThunderClient.overlay:setWantKeyEvents(false)
+    ThunderClient.overlay:setAlwaysOnTop(true)
+    ThunderClient.overlay.followGameWorld = false
+
+    -- We want it to ignore mouse clicks and key events
     ThunderClient.overlay.ignoreMouseEvents = true
+    ThunderClient.overlay.ignoreKeyEvents = true
 
     -- Override the render function to draw a white rectangle with variable alpha
-    ThunderClient.overlay.prerender = function(self)
+    ThunderClient.overlay.render = function(self)
+        ISUIElement.render(self)
         if ThunderClient.flashIntensity > 0 then
             -- drawRect(x, y, w, h, alpha, r, g, b)
             self:drawRect(0, 0, self:getWidth(), self:getHeight(), ThunderClient.flashIntensity, 1, 1, 1)
