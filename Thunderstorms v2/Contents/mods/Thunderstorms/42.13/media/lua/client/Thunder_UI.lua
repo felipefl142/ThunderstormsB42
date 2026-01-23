@@ -77,7 +77,7 @@ function ThunderModUI:createChildren()
 
     local slider = ISPanel:new(pad, y, sliderW, sliderH)
     slider:initialise()
-    slider:setBackgroundColor(0.2, 0.2, 0.2, 0.8)  -- Darker, more visible background
+    slider.backgroundColor = {r=0.2, g=0.2, b=0.2, a=0.8}  -- Darker, more visible background
 
     slider.render = function(s)
         -- Draw track background
