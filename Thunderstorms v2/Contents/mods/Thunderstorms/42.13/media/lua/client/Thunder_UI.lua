@@ -1,7 +1,9 @@
 -- UI COMPLETELY DISABLED - Use console commands instead
 print("[ThunderUI] UI DISABLED - use ForceThunder(dist), TestThunder(dist), SetThunderFrequency(freq)")
+-- All UI code commented out to prevent parse errors
 return
 
+--[[
 require "ISUI/ISCollapsableWindow"
 require "ISUI/ISButton"
 require "ISUI/ISLabel"
@@ -196,3 +198,4 @@ Events.OnKeyPressed.Add(OnKeyPressed)
 
 print("[ThunderUI] ========== LOADED (UI DISABLED) ==========")
 print("[ThunderUI] UI temporarily disabled - use console commands instead")
+--]]

@@ -38,6 +38,7 @@ function ThunderClient.CreateOverlay()
     ThunderClient.overlay.render = function(self)
         ISUIElement.render(self)
         if ThunderClient.flashIntensity > 0 then
+            print("[ThunderClient] RENDER: Drawing flash with intensity " .. string.format("%.2f", ThunderClient.flashIntensity))
             -- drawRect(x, y, w, h, alpha, r, g, b)
             self:drawRect(0, 0, self:getWidth(), self:getHeight(), ThunderClient.flashIntensity, 1, 1, 1)
         end
@@ -50,10 +51,13 @@ end
 
 -- 2. HANDLE SERVER COMMANDS
 local function OnServerCommand(module, command, args)
+    print("[ThunderClient] OnServerCommand called: module=" .. tostring(module) .. ", command=" .. tostring(command))
     if module == "ThunderMod" and command == "LightningStrike" then
         print("[ThunderClient] ⚡ Received LightningStrike command from server!")
         print("[ThunderClient]   Distance: " .. tostring(args.dist) .. " tiles")
         ThunderClient.DoStrike(args)
+    else
+        print("[ThunderClient] Command ignored (not for us)")
     end
 end
 
@@ -152,8 +156,13 @@ end
 function ThunderClient.OnRenderTick()
     -- Process Flash Queue
     local now = getTimestampMs()
+    if #ThunderClient.flashSequence > 0 then
+        print("[ThunderClient] OnRenderTick: Processing " .. #ThunderClient.flashSequence .. " flashes, now=" .. now)
+    end
+
     for i = #ThunderClient.flashSequence, 1, -1 do
         local flash = ThunderClient.flashSequence[i]
+        print("[ThunderClient]   Flash " .. i .. ": start=" .. flash.start .. ", intensity=" .. flash.intensity)
         if now >= flash.start then
             print("[ThunderClient] ⚡ FLASH! Intensity: " .. string.format("%.2f", flash.intensity))
             ThunderClient.flashIntensity = flash.intensity
@@ -161,9 +170,14 @@ function ThunderClient.OnRenderTick()
 
             -- Add overlay to UI when flash starts
             if ThunderClient.overlay and not ThunderClient.overlay.isInUIManager then
+                print("[ThunderClient] Adding overlay to UI manager...")
                 ThunderClient.overlay:addToUIManager()
                 ThunderClient.overlay.isInUIManager = true
-                print("[ThunderClient] Overlay added to UI manager")
+                print("[ThunderClient] Overlay added to UI manager successfully")
+            elseif not ThunderClient.overlay then
+                print("[ThunderClient] ERROR: No overlay exists!")
+            else
+                print("[ThunderClient] Overlay already in UI manager")
             end
 
             table.remove(ThunderClient.flashSequence, i)
@@ -178,6 +192,7 @@ function ThunderClient.OnRenderTick()
 
             -- Remove overlay from UI when flash ends
             if ThunderClient.overlay and ThunderClient.overlay.isInUIManager then
+                print("[ThunderClient] Removing overlay from UI manager...")
                 ThunderClient.overlay:removeFromUIManager()
                 ThunderClient.overlay.isInUIManager = false
                 print("[ThunderClient] Overlay removed from UI manager")
