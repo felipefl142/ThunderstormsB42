@@ -1,8 +1,4 @@
 print("[ThunderClient] File is being loaded...")
-if not isClient() then
-    print("[ThunderClient] Exiting because isClient() returned false/nil")
-    return
-end
 
 require "ISUI/ISUIElement"
 
