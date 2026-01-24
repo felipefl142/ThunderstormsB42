@@ -1,5 +1,7 @@
 print("[ThunderServer] File is being loaded...")
 
+local ThunderMod = require "Thunder_Shared"
+
 print("[ThunderServer] ========== LOADING (Build 42.13) ==========")
 
 -- GLOBAL so it can be accessed from Lua console (singleplayer)
@@ -13,6 +15,11 @@ ThunderServer.minCooldown = 600  -- Minimum 10 seconds between strikes to preven
 
 -- 1. WEATHER MONITORING
 function ThunderServer.OnTick()
+    -- If Native Mode is enabled, disable custom random generation
+    if ThunderMod.Config.UseNativeWeatherEvents then
+        return
+    end
+
     if ThunderServer.cooldownTimer > 0 then
         ThunderServer.cooldownTimer = ThunderServer.cooldownTimer - 1
         return

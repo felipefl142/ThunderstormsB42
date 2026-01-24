@@ -1,6 +1,7 @@
 print("[ThunderClient] File is being loaded...")
 
 require "ISUI/ISUIElement"
+local ThunderMod = require "Thunder_Shared"
 
 print("[ThunderClient] ========== LOADING (Build 42.13) ==========")
 
@@ -59,6 +60,36 @@ local function OnServerCommand(module, command, args)
         end
         ThunderClient.DoStrike(args)
     end
+end
+
+-- 3. HANDLE NATIVE GAME EVENTS
+function ThunderClient.OnNativeThunder(x, y, doStrike, doLight, doRumble)
+    -- Only act if Native Mode is enabled in config
+    if not ThunderMod.Config.UseNativeWeatherEvents then
+        return
+    end
+
+    if ThunderClient.debugMode then
+        print("[ThunderClient] Native Thunder Event: strike=" .. tostring(doStrike) .. ", light=" .. tostring(doLight) .. ", rumble=" .. tostring(doRumble))
+    end
+
+    local dist = 2000 -- Default to far
+
+    if doStrike then
+        -- Close thunder (Lightning Strike)
+        dist = ZombRand(50, 600)
+    elseif doRumble then
+        -- Far thunder (Rumble)
+        dist = ZombRand(1500, 5000)
+    elseif doLight then
+        -- Just light? Treat as medium-far
+        dist = ZombRand(800, 2500)
+    else
+        -- Event fired but no flags?
+        return
+    end
+
+    ThunderClient.DoStrike({dist = dist})
 end
 
 function ThunderClient.DoStrike(args)
@@ -230,9 +261,10 @@ Events.OnGameStart.Add(OnGameStart)
 Events.OnServerCommand.Add(OnServerCommand)
 Events.OnRenderTick.Add(ThunderClient.OnRenderTick)
 Events.OnTick.Add(ThunderClient.OnTick)
+Events.OnThunder.Add(ThunderClient.OnNativeThunder)
 
 print("[ThunderClient] ========== CLIENT INITIALIZED ==========")
-print("[ThunderClient] Events registered: OnGameStart, OnServerCommand, OnRenderTick, OnTick")
+print("[ThunderClient] Events registered: OnGameStart, OnServerCommand, OnRenderTick, OnTick, OnThunder")
 
 -- ============================================================
 -- GLOBAL HELPER FUNCTIONS (for Lua console)
