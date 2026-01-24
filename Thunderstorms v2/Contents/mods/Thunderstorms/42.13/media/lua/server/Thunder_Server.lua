@@ -1,4 +1,8 @@
-if not isServer() then return end
+print("[ThunderServer] File is being loaded...")
+if not isServer() then
+    print("[ThunderServer] Exiting because isServer() returned false/nil")
+    return
+end
 
 print("[ThunderServer] ========== LOADING (Build 42.13) ==========")
 

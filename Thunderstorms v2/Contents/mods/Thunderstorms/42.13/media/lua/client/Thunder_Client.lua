@@ -1,4 +1,8 @@
-if not isClient() then return end
+print("[ThunderClient] File is being loaded...")
+if not isClient() then
+    print("[ThunderClient] Exiting because isClient() returned false/nil")
+    return
+end
 
 require "ISUI/ISUIElement"
 
@@ -64,8 +68,8 @@ end
 function ThunderClient.DoStrike(args)
     local distance = args.dist
 
-    -- Maximum hearing distance is 3400 tiles
-    if distance > 3400 then
+    -- Maximum hearing distance is 8000 tiles
+    if distance > 8000 then
         if ThunderClient.debugMode then
             print("[ThunderClient] Thunder too far away (>" .. distance .. " tiles)")
         end
@@ -76,7 +80,7 @@ function ThunderClient.DoStrike(args)
     ThunderClient.CreateOverlay()
 
     -- Closer = Brighter (Max 0.5 alpha, Min 0.1)
-    local brightness = (1.0 - (distance / 2000)) * 0.5
+    local brightness = (1.0 - (distance / 4700)) * 0.5
     if brightness < 0.1 then brightness = 0.1 end
     if brightness > 0.5 then brightness = 0.5 end
 
@@ -114,8 +118,8 @@ function ThunderClient.DoStrike(args)
     end
 
     -- Calculate dynamic volume based on distance
-    -- Volume: 1.0 at 0 tiles, 0.1 at 3400 tiles
-    local volume = 1.0 - (distance / 3400) * 0.9
+    -- Volume: 1.0 at 0 tiles, 0.1 at 8000 tiles
+    local volume = 1.0 - (distance / 8000) * 0.9
     if volume < 0.1 then volume = 0.1 end
     if volume > 1.0 then volume = 1.0 end
 

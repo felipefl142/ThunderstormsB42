@@ -79,8 +79,8 @@ The mod uses Project Zomboid's client-server architecture with networked events:
 
 #### Audio System (Client)
 - Three sound categories: `ThunderClose` (<200 tiles), `ThunderMedium` (<800 tiles), `ThunderFar` (≥800 tiles)
-- Dynamic volume: 1.0 at 0 tiles → 0.1 at 3400 tiles (linear fallback)
-- Max hearing distance: 3400 tiles
+- Dynamic volume: 1.0 at 0 tiles → 0.1 at 8000 tiles (linear fallback)
+- Max hearing distance: 8000 tiles
 - 3D audio via `PlayWorldSound()` at player square (provides indoor muffling)
 - Sound definitions in `Thunderstorms_sounds.txt` (is3D=true, category=Ambient)
 
@@ -145,7 +145,7 @@ Common issues:
 - **No VFX/SFX on TestThunder():** Check that `ISUIElement` is required and `render()` function is used (not `prerender`)
 - **Mouse/keyboard broken after thunder:** Overlay not removed from UI manager; check `isInUIManager` flag logic
 - **No automatic thunder:** Cloud intensity likely <0.2; check with `getClimateManager():getCloudIntensity()`
-- **Silent thunder:** Check distance <3400 tiles and volume calculation; verify 3D sounds defined in scripts
+- **Silent thunder:** Check distance <8000 tiles and volume calculation; verify 3D sounds defined in scripts
 
 ## Publishing
 
