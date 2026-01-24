@@ -184,6 +184,10 @@ To upload to Steam Workshop:
 
 ## Recent Changes
 
+### v1.4.1 (Jan 2026) - Console Command Hotfix
+- **Fixed "attempt to call nil" errors** for console commands (`ForceThunder`, `TestThunder`) by removing restrictive `isClient()`/`isServer()` guard clauses at file start
+- Ensures global functions are properly defined during initialization phases (including Single Player)
+
 ### v1.4 (Jan 2026) - Extended Range & Bug Fixes
 - **Increased max hearing distance from 3400 to 8000 tiles** for more realistic long-distance thunder
 - **Fixed silent loading failure** caused by calling `isClient()`/`isServer()` in string concatenation during file load
