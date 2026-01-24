@@ -1,0 +1,318 @@
+Perfect! Now I can explain both flows in detail with exact code references.
+
+  ---
+  🌩️ Flow 1: Automatic Thunder Strike (Via Storm)
+
+  Server-Side Monitoring & Triggering
+
+  Step 1: Weather Monitoring Loop (Thunder_Server.lua:15-32)
+
+  Every game tick, the server runs ThunderServer.OnTick():
+
+  function ThunderServer.OnTick()
+      -- Check cooldown first to prevent spam
+      if ThunderServer.cooldownTimer > 0 then
+          ThunderServer.cooldownTimer = ThunderServer.cooldownTimer - 1
+          return
+      end
+
+      -- Get current cloud intensity from game's climate manager
+      local clim = getClimateManager()
+      local clouds = clim:getCloudIntensity()  -- Returns 0.0 to 1.0
+
+      -- Only trigger if clouds > 0.2 (20% threshold)
+      if clouds > ThunderServer.minClouds then
+          -- Calculate probability: baseChance (0.01%) × cloud intensity
+          local currentChance = ThunderServer.baseChance * clouds
+
+          -- Roll random dice (0-100)
+          if ZombRandFloat(0, 100) < currentChance then
+              ThunderServer.TriggerStrike()  -- ⚡ TRIGGER!
+          end
+      end
+  end
+
+  Example: If cloud intensity is 0.8:
+  - currentChance = 0.01 × 0.8 = 0.008% per tick
+  - With ~60 ticks/second, roughly 1 strike every ~2 minutes on average
+
+  Step 2: Thunder Strike Trigger (Thunder_Server.lua:35-59)
+
+  When conditions are met, ThunderServer.TriggerStrike() executes:
+
+  function ThunderServer.TriggerStrike(forcedDist)
+      -- Calculate dynamic cooldown based on cloud intensity
+      local clouds = clim:getCloudIntensity()
+      local intensityFactor = (1.1 - clouds)  -- Invert: high clouds = low factor
+
+      -- High clouds (1.0) → 600 ticks (~10s cooldown)
+      -- Low clouds (0.2) → 600 + rand(0-1000) → up to ~26s cooldown
+      local addedDelay = math.floor(1000 * intensityFactor)
+      ThunderServer.cooldownTimer = 600 + ZombRand(0, addedDelay)
+
+      -- Random distance 50-3400 tiles (no forced distance for automatic strikes)
+      local distance = forcedDist or ZombRand(50, 3400)
+
+      -- Prepare network packet
+      local args = {
+          dist = distance
+      }
+
+      -- 🌐 SEND TO ALL CLIENTS
+      sendServerCommand("ThunderMod", "LightningStrike", args)
+  end
+
+  Step 3: Network Transmission
+
+  The sendServerCommand() broadcasts to all connected clients (including singleplayer):
+  - Module: "ThunderMod"
+  - Command: "LightningStrike"
+  - Payload: {dist = 1234} (example distance)
+
+  ---
+  Client-Side Reception & Execution
+
+  Step 4: Server Command Reception (Thunder_Client.lua:53-62)
+
+  Each client receives the command via OnServerCommand():
+
+  local function OnServerCommand(module, command, args)
+      if module == "ThunderMod" and command == "LightningStrike" then
+          print("[ThunderClient] ⚡ Received LightningStrike from server!")
+          print("[ThunderClient]   Distance: " .. args.dist .. " tiles")
+          ThunderClient.DoStrike(args)  -- Execute locally
+      end
+  end
+
+  Step 5: Strike Execution (Thunder_Client.lua:64-133)
+
+  ThunderClient.DoStrike(args) handles both visuals and audio:
+
+  function ThunderClient.DoStrike(args)
+      local distance = args.dist
+
+      -- Skip if too far to hear (>3400 tiles)
+      if distance > 3400 then return end
+
+      -- ═══════════════════════════════════════
+      -- VISUAL FLASH SETUP
+      -- ═══════════════════════════════════════
+
+      -- 1. Ensure overlay exists (lazy initialization)
+      ThunderClient.CreateOverlay()
+
+      -- 2. Calculate brightness based on distance
+      local brightness = (1.0 - (distance / 2000)) * 0.5
+      if brightness < 0.1 then brightness = 0.1 end  -- Min: 0.1 alpha
+      if brightness > 0.5 then brightness = 0.5 end  -- Max: 0.5 alpha
+
+      -- 3. Create multi-flash sequence (70% single, 30% double)
+      local numFlashes = 1
+      if ZombRand(100) < 30 then numFlashes = 2 end
+
+      local now = getTimestampMs()
+      local cumulativeDelay = 0
+
+      for i = 1, numFlashes do
+          if i > 1 then
+              cumulativeDelay = cumulativeDelay + ZombRand(50, 151)  -- 50-150ms gap
+          end
+
+          table.insert(ThunderClient.flashSequence, {
+              start = now + cumulativeDelay,
+              intensity = brightness * ZombRandFloat(0.9, 1.1)  -- ±10% variation
+          })
+      end
+
+      -- ═══════════════════════════════════════
+      -- AUDIO SETUP WITH PHYSICS DELAY
+      -- ═══════════════════════════════════════
+
+      -- 4. Calculate speed-of-sound delay
+      local speed = 340  -- tiles/second (meters/second equivalent)
+      local delaySeconds = distance / speed
+      local triggerTime = getTimestampMs() + (delaySeconds * 1000)
+
+      -- 5. Select sound based on distance
+      local soundName = "MyThunder/ThunderFar"
+      if distance < 200 then
+          soundName = "MyThunder/ThunderClose"
+      elseif distance < 800 then
+          soundName = "MyThunder/ThunderMedium"
+      end
+
+      -- 6. Calculate dynamic volume (1.0 at 0 tiles → 0.1 at 3400 tiles)
+      local volume = 1.0 - (distance / 3400) * 0.9
+
+      -- 7. Queue sound for delayed playback
+      table.insert(ThunderClient.delayedSounds, {
+          sound = soundName,
+          time = triggerTime,
+          volume = volume
+      })
+  end
+
+  Example with distance = 680 tiles:
+  - Flash brightness: (1.0 - 680/2000) * 0.5 = 0.33 alpha
+  - Sound delay: 680 / 340 = 2.0 seconds
+  - Sound category: ThunderMedium (680 < 800)
+  - Volume: 1.0 - (680/3400) * 0.9 = 0.82
+
+  Step 6: Visual Flash Rendering (Thunder_Client.lua:159-205)
+
+  ThunderClient.OnRenderTick() runs every frame:
+
+  function ThunderClient.OnRenderTick()
+      local now = getTimestampMs()
+
+      -- Process flash queue (checks for due flashes)
+      for i = #ThunderClient.flashSequence, 1, -1 do
+          local flash = ThunderClient.flashSequence[i]
+          if now >= flash.start then
+              ThunderClient.flashIntensity = flash.intensity
+
+              -- Add overlay to UI manager (makes it visible)
+              if not ThunderClient.overlay.isInUIManager then
+                  ThunderClient.overlay:addToUIManager()
+                  ThunderClient.overlay.isInUIManager = true
+              end
+
+              table.remove(ThunderClient.flashSequence, i)
+          end
+      end
+
+      -- Decay flash intensity every frame
+      if ThunderClient.flashIntensity > 0 then
+          ThunderClient.flashIntensity = ThunderClient.flashIntensity - 0.05
+          if ThunderClient.flashIntensity < 0 then
+              ThunderClient.flashIntensity = 0
+
+              -- Remove overlay when flash ends (prevents mouse blocking)
+              if ThunderClient.overlay.isInUIManager then
+                  ThunderClient.overlay:removeFromUIManager()
+                  ThunderClient.overlay.isInUIManager = false
+              end
+          end
+      end
+  end
+
+  The overlay's custom render() function (Thunder_Client.lua:38-45) draws the white flash:
+
+  ThunderClient.overlay.render = function(self)
+      ISUIElement.render(self)
+      if ThunderClient.flashIntensity > 0 then
+          -- Draw full-screen white rectangle with current intensity alpha
+          self:drawRect(0, 0, self:getWidth(), self:getHeight(),
+                        ThunderClient.flashIntensity, 1, 1, 1)
+      end
+  end
+
+  Flash Timeline:
+  - Frame 0: Flash intensity = 0.33 (33% opacity white screen)
+  - Frame 1: Intensity = 0.28 (decay by 0.05)
+  - Frame 2: Intensity = 0.23
+  - ...
+  - Frame 7: Intensity = 0.0 → Overlay removed from UI
+
+  Step 7: Audio Playback (Thunder_Client.lua:136-157)
+
+  ThunderClient.OnTick() runs every game tick:
+
+  function ThunderClient.OnTick()
+      local now = getTimestampMs()
+
+      -- Check delayed sound queue
+      for i = #ThunderClient.delayedSounds, 1, -1 do
+          local entry = ThunderClient.delayedSounds[i]
+
+          if now >= entry.time then  -- Time to play!
+              local player = getPlayer()
+              if player then
+                  -- Play 3D positional sound at player's square
+                  getSoundManager():PlayWorldSound(
+                      entry.sound,        -- "MyThunder/ThunderMedium"
+                      player:getSquare(), -- Position
+                      0,                  -- Pitch variance
+                      entry.volume,       -- 0.82
+                      20,                 -- Radius (unused for 3D sounds)
+                      false               -- Not looping
+                  )
+              end
+
+              table.remove(ThunderClient.delayedSounds, i)
+          end
+      end
+  end
+
+  Timeline for 680-tile thunder:
+  - T+0ms: Flash appears instantly
+  - T+100ms: Flash fully decayed
+  - T+2000ms: Sound plays (2-second physics delay)
+
+  ---
+  ⚡ Flow 2: Manual Thunder (TestThunder(200))
+
+  This bypasses the server and directly executes on the client for instant testing.
+
+  Execution Path (Thunder_Client.lua:244-251)
+
+  When you type TestThunder(200) in the Lua console:
+
+  function TestThunder(dist)
+      dist = dist or 500  -- Default to 500 tiles if no distance provided
+      print("[ThunderClient] TestThunder called - DIRECT CLIENT TEST")
+      print("[ThunderClient]   dist=" .. dist)
+
+      ThunderClient.DoStrike({dist = dist})  -- Directly call DoStrike
+      return true
+  end
+
+  Key Difference from Automatic Thunder:
+  1. No Server Involvement - Skips all server-side logic (no weather check, no cooldown, no network transmission)
+  2. Client-Only - Only you see/hear the thunder (not other players in multiplayer)
+  3. Instant Execution - Goes straight to ThunderClient.DoStrike()
+  4. Fixed Distance - You specify exact distance (200 tiles in your example)
+
+  After calling DoStrike(), Steps 5-7 from Flow 1 execute identically:
+  - Flash brightness calculated: (1.0 - 200/2000) * 0.5 = 0.45 alpha
+  - Sound delay: 200 / 340 = 0.59 seconds
+  - Sound: ThunderClose (200 < 200 threshold)
+  - Volume: 1.0 - (200/3400) * 0.9 = 0.95
+
+  ---
+  📊 Comparison Summary
+  ┌──────────────────┬───────────────────────────┬────────────────────────┐
+  │      Aspect      │     Automatic (Storm)     │    TestThunder(200)    │
+  ├──────────────────┼───────────────────────────┼────────────────────────┤
+  │ Trigger          │ Server weather monitoring │ Lua console command    │
+  ├──────────────────┼───────────────────────────┼────────────────────────┤
+  │ Weather Required │ Yes (clouds > 0.2)        │ No                     │
+  ├──────────────────┼───────────────────────────┼────────────────────────┤
+  │ Cooldown         │ Yes (600+ ticks)          │ No                     │
+  ├──────────────────┼───────────────────────────┼────────────────────────┤
+  │ Distance         │ Random (50-3400)          │ Specified (200)        │
+  ├──────────────────┼───────────────────────────┼────────────────────────┤
+  │ Multiplayer      │ All players see/hear      │ Only you (client-side) │
+  ├──────────────────┼───────────────────────────┼────────────────────────┤
+  │ Network          │ Server → All clients      │ No network traffic     │
+  ├──────────────────┼───────────────────────────┼────────────────────────┤
+  │ Primary Use      │ Gameplay immersion        │ Debugging/testing      │
+  └──────────────────┴───────────────────────────┴────────────────────────┘
+  ---
+  🔬 Technical Details
+
+  Why Speed of Sound = 340 tiles/second?
+
+  Project Zomboid uses 1 tile ≈ 1 meter, so the mod uses real-world physics (343 m/s rounded to 340).
+
+  Why Dynamic Overlay Addition/Removal?
+
+  Build 42.13 has a critical bug: UI overlays permanently added to UI Manager block mouse input. The mod works around this by:
+  1. Creating overlay once (Thunder_Client.lua:17-50)
+  2. Adding to UI Manager only during flash (Thunder_Client.lua:175-184)
+  3. Removing immediately when flash decays (Thunder_Client.lua:197-202)
+
+  Why 3D Sound at Player Position?
+
+  PlayWorldSound() enables indoor muffling - thunder sounds quieter inside buildings even though it's omnidirectional (not
+  directional audio).
