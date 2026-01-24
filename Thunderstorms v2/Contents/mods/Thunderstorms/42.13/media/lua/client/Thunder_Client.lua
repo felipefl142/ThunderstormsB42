@@ -1,4 +1,4 @@
-if isServer() then return end
+if not isClient() then return end
 
 require "ISUI/ISUIElement"
 
@@ -7,22 +7,26 @@ print("[ThunderClient] ========== LOADING (Build 42.13) ==========")
 -- GLOBAL so it can be accessed from Lua console
 ThunderClient = {}
 ThunderClient.flashIntensity = 0.0
-ThunderClient.flashDecay = 0.05 -- Slower decay for better visibility
+ThunderClient.flashDecayRate = 2.5 -- Alpha units per second (time-based, not frame-based)
+ThunderClient.lastUpdateTime = 0
 ThunderClient.delayedSounds = {}
 ThunderClient.flashSequence = {} -- Queue for multi-flash effect
 ThunderClient.overlay = nil
+ThunderClient.debugMode = false -- Set to true for detailed logging
 
 -- 1. SETUP THE OVERLAY
 -- We create a UI element that acts as our "Flash Screen"
 function ThunderClient.CreateOverlay()
     if ThunderClient.overlay then
-        print("[ThunderClient] Overlay already exists")
-        return
+        return -- Overlay already exists
     end
 
     local w = getCore():getScreenWidth()
     local h = getCore():getScreenHeight()
-    print("[ThunderClient] Creating overlay " .. w .. "x" .. h)
+
+    if ThunderClient.debugMode then
+        print("[ThunderClient] Creating flash overlay " .. w .. "x" .. h)
+    end
 
     -- Create a simple rectangle element
     ThunderClient.overlay = ISUIElement:new(0, 0, w, h)
@@ -38,7 +42,6 @@ function ThunderClient.CreateOverlay()
     ThunderClient.overlay.render = function(self)
         ISUIElement.render(self)
         if ThunderClient.flashIntensity > 0 then
-            print("[ThunderClient] RENDER: Drawing flash with intensity " .. string.format("%.2f", ThunderClient.flashIntensity))
             -- drawRect(x, y, w, h, alpha, r, g, b)
             self:drawRect(0, 0, self:getWidth(), self:getHeight(), ThunderClient.flashIntensity, 1, 1, 1)
         end
@@ -46,36 +49,31 @@ function ThunderClient.CreateOverlay()
 
     -- Don't add to UI manager yet - we'll add/remove it dynamically
     ThunderClient.overlay.isInUIManager = false
-    print("[ThunderClient] ✓ Overlay created (not added to UI manager)")
 end
 
 -- 2. HANDLE SERVER COMMANDS
 local function OnServerCommand(module, command, args)
-    print("[ThunderClient] OnServerCommand called: module=" .. tostring(module) .. ", command=" .. tostring(command))
     if module == "ThunderMod" and command == "LightningStrike" then
-        print("[ThunderClient] ⚡ Received LightningStrike command from server!")
-        print("[ThunderClient]   Distance: " .. tostring(args.dist) .. " tiles")
+        if ThunderClient.debugMode then
+            print("[ThunderClient] ⚡ Received LightningStrike from server (distance: " .. tostring(args.dist) .. " tiles)")
+        end
         ThunderClient.DoStrike(args)
-    else
-        print("[ThunderClient] Command ignored (not for us)")
     end
 end
 
 function ThunderClient.DoStrike(args)
     local distance = args.dist
-    print("[ThunderClient] DoStrike executing - dist=" .. tostring(distance))
 
     -- Maximum hearing distance is 3400 tiles
     if distance > 3400 then
-        print("[ThunderClient] Thunder too far away (>" .. distance .. " tiles) - no sound will play")
+        if ThunderClient.debugMode then
+            print("[ThunderClient] Thunder too far away (>" .. distance .. " tiles)")
+        end
         return
     end
 
-    -- VISUALS: Set the intensity
-    -- Ensure overlay exists
-    print("[ThunderClient] Creating overlay...")
+    -- VISUALS: Ensure overlay exists
     ThunderClient.CreateOverlay()
-    print("[ThunderClient] Overlay created/verified")
 
     -- Closer = Brighter (Max 0.5 alpha, Min 0.1)
     local brightness = (1.0 - (distance / 2000)) * 0.5
@@ -83,18 +81,17 @@ function ThunderClient.DoStrike(args)
     if brightness > 0.5 then brightness = 0.5 end
 
     -- Queue multi-flash sequence
-    ThunderClient.flashSequence = {}
     -- Simplified pattern: Mostly single flashes, occasional double flash
     local numFlashes = 1
     if ZombRand(100) < 30 then numFlashes = 2 end -- 30% chance of double flash
-    
+
     local now = getTimestampMs()
     local cumulativeDelay = 0
 
     for i = 1, numFlashes do
         if i > 1 then
-            -- Longer gap between pulses for "double strike" feel (50-150ms)
-            cumulativeDelay = cumulativeDelay + ZombRand(50, 151)
+            -- Longer gap between pulses for "double strike" feel (40-100ms)
+            cumulativeDelay = cumulativeDelay + ZombRand(40, 101)
         end
 
         table.insert(ThunderClient.flashSequence, {
@@ -122,9 +119,11 @@ function ThunderClient.DoStrike(args)
     if volume < 0.1 then volume = 0.1 end
     if volume > 1.0 then volume = 1.0 end
 
+    if ThunderClient.debugMode then
+        print("[ThunderClient] ⚡ Thunder strike at " .. distance .. " tiles: " .. numFlashes .. " flash(es), sound in " .. string.format("%.1f", delaySeconds) .. "s")
+    end
+
     -- Queue Sound with dynamic volume
-    print("[ThunderClient] Queueing sound: " .. soundName .. " in " .. string.format("%.1f", delaySeconds) .. "s at volume " .. string.format("%.2f", volume))
-    print("[ThunderClient] Queuing " .. numFlashes .. " flash(es) with brightness " .. string.format("%.2f", brightness))
     table.insert(ThunderClient.delayedSounds, {
         sound = soundName,
         time = triggerTime,
@@ -140,14 +139,23 @@ function ThunderClient.OnTick()
         local entry = ThunderClient.delayedSounds[i]
 
         if now >= entry.time then
-            print("[ThunderClient] 🔊 Playing sound: " .. entry.sound .. " at volume " .. string.format("%.2f", entry.volume))
+            print("[ThunderClient] 🔊 Playing thunder sound: " .. entry.sound .. " (volume: " .. string.format("%.2f", entry.volume) .. ")")
 
-            -- Play 3D sound at player position (omnidirectional but gets muffled indoors)
+            -- Play 3D ambient sound
             local player = getPlayer()
             if player then
-                getSoundManager():PlayWorldSound(entry.sound, player:getSquare(), 0, entry.volume, 20, false)
+                -- For thunder, we want it heard from everywhere but still affected by environment
+                -- PlayWorldSound(soundName, square, loopDelay, volume, radius, useBaricade)
+                -- Use a very large radius for thunder (since it's heard from far away)
+                local square = player:getSquare()
+                if square then
+                    getSoundManager():PlayWorldSound(entry.sound, square, 0, entry.volume, 1000, false)
+                else
+                    -- Fallback if no square
+                    getSoundManager():PlaySound(entry.sound, false, entry.volume)
+                end
             else
-                -- Fallback to 2D sound if no player
+                -- Fallback to 2D sound if no player (shouldn't happen in-game)
                 getSoundManager():PlaySound(entry.sound, false, entry.volume)
             end
 
@@ -157,48 +165,56 @@ function ThunderClient.OnTick()
 end
 
 function ThunderClient.OnRenderTick()
-    -- Process Flash Queue
     local now = getTimestampMs()
-    if #ThunderClient.flashSequence > 0 then
-        print("[ThunderClient] OnRenderTick: Processing " .. #ThunderClient.flashSequence .. " flashes, now=" .. now)
-    end
 
+    -- Calculate delta time for consistent decay across different framerates
+    if ThunderClient.lastUpdateTime == 0 then
+        ThunderClient.lastUpdateTime = now
+    end
+    local deltaTime = (now - ThunderClient.lastUpdateTime) / 1000.0 -- Convert to seconds
+    ThunderClient.lastUpdateTime = now
+
+    -- Cap delta time to prevent huge jumps
+    if deltaTime > 0.1 then deltaTime = 0.1 end
+
+    -- Process Flash Queue
     for i = #ThunderClient.flashSequence, 1, -1 do
         local flash = ThunderClient.flashSequence[i]
-        print("[ThunderClient]   Flash " .. i .. ": start=" .. flash.start .. ", intensity=" .. flash.intensity)
         if now >= flash.start then
-            print("[ThunderClient] ⚡ FLASH! Intensity: " .. string.format("%.2f", flash.intensity))
-            ThunderClient.flashIntensity = flash.intensity
-            if ThunderClient.flashIntensity > 1.0 then ThunderClient.flashIntensity = 1.0 end
+            if ThunderClient.debugMode then
+                print("[ThunderClient] ⚡ FLASH! Intensity: " .. string.format("%.2f", flash.intensity))
+            end
+
+            -- Set new flash intensity (additive for overlapping flashes)
+            ThunderClient.flashIntensity = math.min(ThunderClient.flashIntensity + flash.intensity, 1.0)
 
             -- Add overlay to UI when flash starts
             if ThunderClient.overlay and not ThunderClient.overlay.isInUIManager then
-                print("[ThunderClient] Adding overlay to UI manager...")
+                if ThunderClient.debugMode then
+                    print("[ThunderClient] Adding overlay to UI manager")
+                end
                 ThunderClient.overlay:addToUIManager()
                 ThunderClient.overlay.isInUIManager = true
-                print("[ThunderClient] Overlay added to UI manager successfully")
-            elseif not ThunderClient.overlay then
-                print("[ThunderClient] ERROR: No overlay exists!")
-            else
-                print("[ThunderClient] Overlay already in UI manager")
             end
 
             table.remove(ThunderClient.flashSequence, i)
         end
     end
 
-    -- Flash Decay Loop
+    -- Time-based Flash Decay (smooth and consistent across all framerates)
     if ThunderClient.flashIntensity > 0 then
-        ThunderClient.flashIntensity = ThunderClient.flashIntensity - ThunderClient.flashDecay
-        if ThunderClient.flashIntensity < 0 then
+        ThunderClient.flashIntensity = ThunderClient.flashIntensity - (ThunderClient.flashDecayRate * deltaTime)
+
+        if ThunderClient.flashIntensity <= 0 then
             ThunderClient.flashIntensity = 0
 
             -- Remove overlay from UI when flash ends
             if ThunderClient.overlay and ThunderClient.overlay.isInUIManager then
-                print("[ThunderClient] Removing overlay from UI manager...")
+                if ThunderClient.debugMode then
+                    print("[ThunderClient] Removing overlay from UI manager")
+                end
                 ThunderClient.overlay:removeFromUIManager()
                 ThunderClient.overlay.isInUIManager = false
-                print("[ThunderClient] Overlay removed from UI manager")
             end
         end
     end
@@ -226,7 +242,7 @@ print("[ThunderClient] Events registered: OnGameStart, OnServerCommand, OnRender
 --- Usage: ForceThunder(200) or ForceThunder() for random distance
 function ForceThunder(dist)
     dist = dist or ZombRand(50, 2500)
-    print("[ThunderClient] ForceThunder called with dist=" .. tostring(dist))
+    print("[ThunderClient] Forcing thunder strike at " .. tostring(dist) .. " tiles")
 
     local player = getPlayer()
     if not player then
@@ -234,7 +250,6 @@ function ForceThunder(dist)
         return false
     end
 
-    print("[ThunderClient] Sending ForceStrike command to server...")
     sendClientCommand(player, "ThunderMod", "ForceStrike", {dist = dist})
     return true
 end
@@ -243,8 +258,7 @@ end
 --- Usage: TestThunder(200) or TestThunder() for default
 function TestThunder(dist)
     dist = dist or 500
-    print("[ThunderClient] TestThunder called - DIRECT CLIENT TEST")
-    print("[ThunderClient]   dist=" .. tostring(dist))
+    print("[ThunderClient] Testing thunder effect at " .. tostring(dist) .. " tiles (client-side)")
 
     ThunderClient.DoStrike({dist = dist})
     return true
@@ -254,7 +268,7 @@ end
 --- Usage: SetThunderFrequency(3.0)
 function SetThunderFrequency(freq)
     freq = freq or 1.0
-    print("[ThunderClient] SetThunderFrequency called with freq=" .. tostring(freq))
+    print("[ThunderClient] Setting thunder frequency to " .. tostring(freq))
 
     local player = getPlayer()
     if not player then
@@ -266,5 +280,20 @@ function SetThunderFrequency(freq)
     return true
 end
 
-print("[ThunderClient] Console commands available: ForceThunder(dist), TestThunder(dist), SetThunderFrequency(freq)")
-print("[ThunderClient] NOTE: Console runs server-side in singleplayer - use ForceThunder() to test")
+--- Toggle debug logging
+--- Usage: ThunderToggleDebug(true) or ThunderToggleDebug(false) or ThunderToggleDebug() to toggle
+function ThunderToggleDebug(enable)
+    if enable == nil then
+        ThunderClient.debugMode = not ThunderClient.debugMode
+    else
+        ThunderClient.debugMode = enable
+    end
+    print("[ThunderClient] Debug mode: " .. (ThunderClient.debugMode and "ENABLED" or "DISABLED"))
+    return ThunderClient.debugMode
+end
+
+print("[ThunderClient] Console commands:")
+print("  ForceThunder(dist)     - Trigger thunder at distance (via server)")
+print("  TestThunder(dist)      - Test thunder effect (client-side)")
+print("  SetThunderFrequency(f) - Set frequency multiplier")
+print("  ThunderToggleDebug(true/false) - Toggle debug logging")

@@ -1,4 +1,4 @@
-if isClient() then return end
+if not isServer() then return end
 
 print("[ThunderServer] ========== LOADING (Build 42.13) ==========")
 
@@ -7,7 +7,7 @@ ThunderServer = {}
 
 -- CONFIG
 ThunderServer.minClouds = 0.2
-ThunderServer.baseChance = 0.01  -- Adjusted chance (0.01% * intensity per tick)
+ThunderServer.baseChance = 0.05  -- Adjusted chance (0.05% * intensity per tick)
 ThunderServer.cooldownTimer = 0
 ThunderServer.minCooldown = 600  -- Minimum 10 seconds between strikes to prevent spam
 
