@@ -83,6 +83,14 @@ local function OnClientCommand(module, command, player, args)
         else
             print("[ThunderServer] ERROR: Invalid frequency value: " .. tostring(args.frequency))
         end
+
+    elseif command == "SetNativeMode" then
+        local enabled = args.enabled
+        ThunderMod.Config.UseNativeWeatherEvents = enabled
+        print("[ThunderServer] Native Mode set to: " .. tostring(enabled))
+        -- Broadcast to all clients so they update their event listeners
+        sendServerCommand("ThunderMod", "SetNativeMode", {enabled = enabled})
+
     else
         print("[ThunderServer] Unknown command: " .. command)
     end
@@ -94,6 +102,16 @@ Events.OnClientCommand.Add(OnClientCommand)
 -- ============================================================
 -- GLOBAL HELPER FUNCTION (for server-side Lua console in SP)
 -- ============================================================
+
+--- Toggle Native Mode from Server Console
+--- Usage: ServerToggleNativeMode(true)
+function ServerToggleNativeMode(enabled)
+    if enabled == nil then enabled = true end
+    ThunderMod.Config.UseNativeWeatherEvents = enabled
+    print("[ThunderServer] Native Mode set to: " .. tostring(enabled))
+    sendServerCommand("ThunderMod", "SetNativeMode", {enabled = enabled})
+    return true
+end
 
 --- Directly trigger a strike from server (singleplayer only)
 --- Usage: ServerForceThunder(200) or ServerForceThunder()

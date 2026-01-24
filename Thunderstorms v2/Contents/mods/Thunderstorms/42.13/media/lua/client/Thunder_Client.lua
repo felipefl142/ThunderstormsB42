@@ -54,11 +54,18 @@ end
 
 -- 2. HANDLE SERVER COMMANDS
 local function OnServerCommand(module, command, args)
-    if module == "ThunderMod" and command == "LightningStrike" then
-        if ThunderClient.debugMode then
-            print("[ThunderClient] ⚡ Received LightningStrike from server (distance: " .. tostring(args.dist) .. " tiles)")
+    if module == "ThunderMod" then
+        if command == "LightningStrike" then
+            if ThunderClient.debugMode then
+                print("[ThunderClient] ⚡ Received LightningStrike from server (distance: " .. tostring(args.dist) .. " tiles)")
+            end
+            ThunderClient.DoStrike(args)
+        
+        elseif command == "SetNativeMode" then
+            local enabled = args.enabled
+            ThunderMod.Config.UseNativeWeatherEvents = enabled
+            print("[ThunderClient] Native Mode synced: " .. tostring(enabled))
         end
-        ThunderClient.DoStrike(args)
     end
 end
 
@@ -324,8 +331,24 @@ function ThunderToggleDebug(enable)
     return ThunderClient.debugMode
 end
 
+--- Enable/Disable Native Mode (Sync with game weather)
+--- Usage: SetNativeMode(true) or SetNativeMode(false)
+function SetNativeMode(enabled)
+    if enabled == nil then enabled = true end
+    print("[ThunderClient] Requesting Native Mode: " .. tostring(enabled))
+    
+    local player = getPlayer()
+    if player then
+        sendClientCommand(player, "ThunderMod", "SetNativeMode", {enabled = enabled})
+    else
+        print("[ThunderClient] Error: No player found")
+    end
+    return enabled
+end
+
 print("[ThunderClient] Console commands:")
 print("  ForceThunder(dist)     - Trigger thunder at distance (via server)")
 print("  TestThunder(dist)      - Test thunder effect (client-side)")
 print("  SetThunderFrequency(f) - Set frequency multiplier")
+print("  SetNativeMode(bool)    - Toggle Native Mode (sync with game weather)")
 print("  ThunderToggleDebug(true/false) - Toggle debug logging")

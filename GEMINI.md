@@ -120,6 +120,10 @@ ThunderToggleDebug()      -- Toggle on/off
 ThunderToggleDebug(true)  -- Enable
 ThunderToggleDebug(false) -- Disable
 
+-- Toggle Native Mode (sync with game weather)
+SetNativeMode(true)       -- Enable Native Mode
+SetNativeMode(false)      -- Disable Native Mode (use custom generator)
+
 -- Check current cloud intensity
 print(getClimateManager():getCloudIntensity())
 ```
