@@ -184,6 +184,11 @@ To upload to Steam Workshop:
 
 ## Recent Changes
 
+### v1.5 (Jan 2026) - Native Mode Support
+- **Added Native Mode:** Optional configuration to sync thunder strikes with Project Zomboid's internal weather events.
+- **`UseNativeWeatherEvents` flag:** Set to `true` in `Thunder_Shared.lua` to disable custom generation and listen to game's `OnThunder` event.
+- **Benefit:** Perfect synchronization with foraging bonuses/penalties and moodles that rely on game-native thunder events.
+
 ### v1.4.1 (Jan 2026) - Console Command Hotfix
 - **Fixed "attempt to call nil" errors** for console commands (`ForceThunder`, `TestThunder`) by removing restrictive `isClient()`/`isServer()` guard clauses at file start
 - Ensures global functions are properly defined during initialization phases (including Single Player)

@@ -58,6 +58,16 @@ The mod uses Project Zomboid's client-server architecture with networked events:
    - UI was causing game-breaking bugs in Build 42.13
    - Console commands are the primary interface
 
+## Configuration
+
+Settings can be adjusted in `media/lua/shared/Thunder_Shared.lua`:
+
+| Setting | Default | Description |
+| :--- | :--- | :--- |
+| `UseNativeWeatherEvents` | `false` | **true:** Syncs with game's internal `OnThunder` event (better for foraging/moodles). <br> **false:** Uses mod's custom physics-based generation logic (better control over frequency). |
+| `StrikeChance` | `0.002` | Base chance calculation for custom generator. |
+| `StrikeRadius` | `150` | Radius logic for strikes (internal). |
+
 ### Key Systems
 
 #### Thunder Triggering (Server)
@@ -183,6 +193,11 @@ To upload to Steam Workshop:
 - **Network optimization:** Only distance is transmitted; clients calculate flash/sound locally
 
 ## Recent Changes
+
+### v1.5 (Jan 2026) - Native Mode Support
+- **Added Native Mode:** Optional configuration to sync thunder strikes with Project Zomboid's internal weather events.
+- **`UseNativeWeatherEvents` flag:** Set to `true` in `Thunder_Shared.lua` to disable custom generation and listen to game's `OnThunder` event.
+- **Benefit:** Perfect synchronization with foraging bonuses/penalties and moodles that rely on game-native thunder events.
 
 ### v1.4.1 (Jan 2026) - Console Command Hotfix
 - **Fixed "attempt to call nil" errors** for console commands (`ForceThunder`, `TestThunder`) by removing restrictive `isClient()`/`isServer()` guard clauses at file start
