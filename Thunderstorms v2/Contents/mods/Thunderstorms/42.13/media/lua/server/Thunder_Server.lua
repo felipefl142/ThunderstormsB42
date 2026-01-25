@@ -96,6 +96,27 @@ local function OnClientCommand(module, command, player, args)
     end
 end
 
+function ThunderServer.OnNativeThunder(x, y, bStrike, bLight, bRumble)
+    if not ThunderMod.Config.UseNativeWeatherEvents then return end
+    
+    print("[ThunderServer] Native Thunder caught: strike=" .. tostring(bStrike))
+    
+    -- Trigger our physics-based thunder based on the native event
+    local dist = 1500 -- Default
+    if bStrike then dist = ZombRand(50, 600)
+    elseif bLight then dist = ZombRand(600, 1500)
+    elseif bRumble then dist = ZombRand(1500, 4000) end
+    
+    ThunderServer.TriggerStrike(dist)
+end
+
+if Events.OnThunder then
+    Events.OnThunder.Add(ThunderServer.OnNativeThunder)
+    print("[ThunderServer] Events.OnThunder registered")
+else
+    print("[ThunderServer] Events.OnThunder not found (normal on some versions)")
+end
+
 Events.OnTick.Add(ThunderServer.OnTick)
 Events.OnClientCommand.Add(OnClientCommand)
 
@@ -104,7 +125,7 @@ Events.OnClientCommand.Add(OnClientCommand)
 -- ============================================================
 
 --- Toggle Native Mode from Server Console
---- Usage: ServerToggleNativeMode(true)
+--- Usage: ServerToggleNativeMode(true) or SetNativeMode(true)
 function ServerToggleNativeMode(enabled)
     if enabled == nil then enabled = true end
     ThunderMod.Config.UseNativeWeatherEvents = enabled
@@ -112,6 +133,9 @@ function ServerToggleNativeMode(enabled)
     sendServerCommand("ThunderMod", "SetNativeMode", {enabled = enabled})
     return true
 end
+
+-- Alias for consistency with client command
+SetNativeMode = ServerToggleNativeMode
 
 --- Directly trigger a strike from server (singleplayer only)
 --- Usage: ServerForceThunder(200) or ServerForceThunder()

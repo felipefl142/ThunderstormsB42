@@ -264,14 +264,18 @@ local function OnGameStart()
     -- Don't create overlay yet, it will be created on demand in DoStrike
 end
 
-Events.OnGameStart.Add(OnGameStart)
-Events.OnServerCommand.Add(OnServerCommand)
-Events.OnRenderTick.Add(ThunderClient.OnRenderTick)
-Events.OnTick.Add(ThunderClient.OnTick)
-Events.OnThunder.Add(ThunderClient.OnNativeThunder)
+if Events.OnGameStart then Events.OnGameStart.Add(OnGameStart) end
+if Events.OnServerCommand then Events.OnServerCommand.Add(OnServerCommand) end
+if Events.OnRenderTick then Events.OnRenderTick.Add(ThunderClient.OnRenderTick) end
+if Events.OnTick then Events.OnTick.Add(ThunderClient.OnTick) end
+if Events.OnThunder then 
+    Events.OnThunder.Add(ThunderClient.OnNativeThunder) 
+else
+    print("[ThunderClient] WARNING: Events.OnThunder is not available in this version of Project Zomboid.")
+end
 
 print("[ThunderClient] ========== CLIENT INITIALIZED ==========")
-print("[ThunderClient] Events registered: OnGameStart, OnServerCommand, OnRenderTick, OnTick, OnThunder")
+print("[ThunderClient] Events registered successfully (where available)")
 
 -- ============================================================
 -- GLOBAL HELPER FUNCTIONS (for Lua console)

@@ -188,6 +188,13 @@ To upload to Steam Workshop:
 
 ## Recent Changes
 
+### v1.5.1 (Jan 2026) - Native Mode Completion & Compatibility
+- **Completed server-side Native Mode integration:** Added missing `OnNativeThunder` event handler to `Thunder_Server.lua` that maps game events to physics-based strikes
+- **Defensive event registration:** Added nil checks for all event registrations to prevent crashes on older PZ versions
+- **Improved version compatibility:** Graceful handling when `Events.OnThunder` is not available, with helpful warning messages
+- **Command alias:** Added `SetNativeMode` as an alias for `ServerToggleNativeMode` for consistency with client commands
+- **Bug fix:** Prevents mod from crashing on PZ versions that lack certain events
+
 ### v1.5 (Jan 2026) - Native Mode Support
 - **Added Native Mode:** Optional configuration to sync thunder strikes with Project Zomboid's internal weather events.
 - **`UseNativeWeatherEvents` flag:** Set to `true` in `Thunder_Shared.lua` to disable custom generation and listen to game's `OnThunder` event.
