@@ -78,15 +78,26 @@ The mod uses Project Zomboid's client-server architecture with networked events:
 - **Volume Modifier:** Indoor sounds are muffled by 10-25% (0.75-0.9 multiplier) based on distance
 
 #### Thunder Triggering (Server)
-```lua
--- Requirements for automatic thunder:
-- Cloud intensity > 0.2 (20%)
-- No active cooldown
-- Random chance per tick: baseChance (0.02) × cloudIntensity
-- Minimum cooldown: 10 seconds (600 ticks)
-- Variable cooldown: minCooldown + random(0 to intensityFactor × 1000 ticks)
-- Higher cloud intensity = shorter cooldown between strikes
-```
+The mod uses a sophisticated dynamic frequency system (v1.7) that replaces the old linear logic:
+- **Multi-Factor Intensity:** Calculated using clouds (50%), rain (35%), wind (10%), and synergy bonus (5%). Uses exponential scaling for dramatic weather changes.
+- **Sigmoid Probability Curve:** Thunder activation follows an S-curve, making strikes rare in light weather but frequent in heavy storms.
+- **Dynamic Cooldown:** Ranges from 5 seconds (extreme storm) to 60 seconds (light clouds), with +/- 15% random variation.
+- **Distance Correlation:** Intense storms have a 60% bias toward close strikes, while light storms favor distant rumbles (70% far).
+- **Native Mode:** When enabled, bypasses custom generation and syncs with game's internal `OnThunder` event.
+
+**Configuration Parameters Reference:**
+
+| Parameter | Default | Range | Purpose |
+| :--- | :--- | :--- | :--- |
+| `probabilityMultiplier` | 1.0 | 0.1-5.0 | Master frequency control |
+| `sigmoidSteepness` | 8.0 | 5.0-15.0 | Curve sharpness |
+| `sigmoidMidpoint` | 0.30 | 0.2-0.5 | Activation threshold |
+| `cloudWeight` | 0.50 | 0.3-0.7 | Cloud contribution |
+| `rainWeight` | 0.35 | 0.2-0.5 | Rain contribution |
+| `windWeight` | 0.10 | 0.0-0.2 | Wind contribution |
+| `minCooldownSeconds` | 5 | 3-10 | Minimum gap |
+| `maxCooldownSeconds` | 60 | 45-120 | Maximum gap |
+| `distanceBiasPower` | 2.5 | 1.5-3.5 | Intensity-distance link |
 
 #### Visual Flash (Client)
 - Full-screen ISUIElement overlay
@@ -119,9 +130,11 @@ TestThunder(500)        -- May call server version in single player
 TestThunderClient(500)  -- Guaranteed client-side test (recommended)
 
 -- Adjust automatic thunder frequency
-SetThunderFrequency(0.5)   -- Default (less frequent)
-SetThunderFrequency(2.0)   -- More frequent
-SetThunderFrequency(0.25)  -- Very rare
+SetThunderMultiplier(2.0)  -- Double frequency (replaces SetThunderFrequency)
+SetThunderFrequency(0.5)   -- Alias for SetThunderMultiplier
+
+-- Storm Diagnostics
+GetStormIntensity()        -- Show current intensity, probability, and timing analysis
 
 -- Toggle debug logging (shows detailed strike information)
 ThunderToggleDebug()      -- Toggle on/off
@@ -218,6 +231,14 @@ To upload to Steam Workshop:
 - **Network optimization:** Only distance is transmitted; clients calculate flash/sound locally
 
 ## Recent Changes
+
+### v1.7 (Jan 2026) - Dynamic Thunder Frequency System
+- **Multi-Factor Storm Intensity:** Replaced linear cloud threshold with a sophisticated formula using clouds, rain, and wind.
+- **Sigmoid Probability Curve:** Natural "S-curve" for thunder strikes (rare rumbles in light weather, frequent strikes in heavy storms).
+- **Dynamic Cooldown:** Cooldown now scales exponentially from 5s to 60s based on storm severity.
+- **Distance Correlation:** Heavy storms now favor close strikes (60%), while light storms feature mostly distant rumbles.
+- **New Diagnostic Commands:** Added `GetStormIntensity()` to analyze weather and `SetThunderMultiplier()` for frequency tuning.
+- **Enhanced Debugging:** Added server-side debug mode and detailed strike analysis logs.
 
 ### v1.6.1 (Jan 2026) - Indoor Sound Balance & Debug Improvements
 - **Reduced indoor sound muffling:** Changed from 30-50% reduction to 10-25% reduction (0.75-0.9 multiplier)

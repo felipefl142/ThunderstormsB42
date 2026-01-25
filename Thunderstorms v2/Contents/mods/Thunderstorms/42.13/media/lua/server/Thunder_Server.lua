@@ -13,6 +13,66 @@ ThunderServer.baseChance = 0.02  -- Adjusted chance (0.02% * intensity per tick)
 ThunderServer.cooldownTimer = 0
 ThunderServer.minCooldown = 600  -- Minimum 10 seconds between strikes to prevent spam
 
+-- 0. CALCULATION HELPERS
+function ThunderServer.CalculateStormIntensity()
+    local clim = getClimateManager()
+    local clouds = clim:getCloudIntensity() or 0
+    local rain = clim:getRainIntensity() or 0
+    local wind = clim:getWindIntensity() or 0
+    local config = ThunderMod.Config.Thunder
+
+    local cloudFactor = math.pow(clouds, config.cloudExponent) * config.cloudWeight
+    local rainFactor = math.pow(rain, config.rainExponent) * config.rainWeight
+    local windFactor = math.pow(wind, config.windExponent) * config.windWeight
+    local synergy = (clouds * rain) * config.synergyWeight
+
+    local intensity = cloudFactor + rainFactor + windFactor + synergy
+    if intensity > 1.0 then intensity = 1.0 end
+    return intensity
+end
+
+function ThunderServer.CalculateThunderProbability(intensity)
+    local config = ThunderMod.Config.Thunder
+    local exponent = -config.sigmoidSteepness * (intensity - config.sigmoidMidpoint)
+    local sigmoid = 1.0 / (1.0 + math.exp(exponent))
+    
+    return sigmoid * 0.08 * intensity * config.probabilityMultiplier
+end
+
+function ThunderServer.CalculateCooldown(intensity)
+    local config = ThunderMod.Config.Thunder
+    local intensityFactor = math.exp(-config.cooldownDecayRate * intensity)
+    
+    local minTicks = config.minCooldownSeconds * 60
+    local maxTicks = config.maxCooldownSeconds * 60
+    local range = maxTicks - minTicks
+    
+    local baseCooldown = minTicks + (range * intensityFactor)
+    local variation = baseCooldown * config.cooldownVariation
+    local finalCooldown = baseCooldown + ZombRandFloat(-variation, variation)
+    
+    return math.max(minTicks, math.floor(finalCooldown))
+end
+
+function ThunderServer.CalculateStrikeDistance(intensity)
+    local config = ThunderMod.Config.Thunder
+    local intensityBias = math.pow(1.0 - intensity, config.distanceBiasPower)
+    
+    -- Weighted random selection
+    local roll = ZombRandFloat(0, 1.0)
+    
+    if roll > intensityBias then
+        -- Intense storm -> Prefer close strikes
+        return ZombRand(config.minDistance, config.closeRangeMax)
+    elseif roll > (intensityBias * 0.5) then
+        -- Medium range
+        return ZombRand(config.closeRangeMax, config.mediumRangeMax)
+    else
+        -- Far range
+        return ZombRand(config.mediumRangeMax, config.maxDistance)
+    end
+end
+
 -- 1. WEATHER MONITORING
 function ThunderServer.OnTick()
     -- If Native Mode is enabled, disable custom random generation
@@ -25,43 +85,32 @@ function ThunderServer.OnTick()
         return
     end
 
-    local clim = getClimateManager()
-    local clouds = clim:getCloudIntensity()
+    local stormIntensity = ThunderServer.CalculateStormIntensity()
     
-    if clouds > ThunderServer.minClouds then
-        -- Simple chance per tick if cooldown is 0
-        local currentChance = ThunderServer.baseChance * clouds
+    -- Early exit optimization for very clear weather
+    if stormIntensity < 0.01 then return end
         
-        if ZombRandFloat(0, 100) < currentChance then
-            ThunderServer.TriggerStrike()
-        end
+    local probability = ThunderServer.CalculateThunderProbability(stormIntensity)
+    
+    if ZombRandFloat(0, 100) < probability then
+        ThunderServer.TriggerStrike(nil, stormIntensity)
     end
 end
 
 -- 2. TRIGGER LOGIC
-function ThunderServer.TriggerStrike(forcedDist)
-    -- Dynamic Cooldown based on intensity
-    local clim = getClimateManager()
-    local clouds = clim:getCloudIntensity()
-
-    -- Invert clouds: 1.0 -> 0.0, 0.2 -> 0.8
-    -- High intensity (1.0) -> Cooldown ~ 60 + rand(0) -> 60 ticks
-    -- Low intensity (0.2) -> Cooldown ~ 60 + rand(800) -> up to 14s
-    local intensityFactor = (1.1 - clouds)
-    if intensityFactor < 0 then intensityFactor = 0 end
-
-    local addedDelay = math.floor(1000 * intensityFactor)
-    ThunderServer.cooldownTimer = ThunderServer.minCooldown + ZombRand(0, addedDelay)
-
-    -- If UI requested specific distance, use it. Otherwise random.
-    -- Increased range to support far thunder delays (max 3400 tiles for hearing)
-    local distance = forcedDist or ZombRand(50, 3400)
+function ThunderServer.TriggerStrike(forcedDist, intensity)
+    local stormIntensity = intensity or ThunderServer.CalculateStormIntensity()
+    
+    ThunderServer.cooldownTimer = ThunderServer.CalculateCooldown(stormIntensity)
+    
+    -- If UI requested specific distance, use it. Otherwise calculate based on intensity.
+    local distance = forcedDist or ThunderServer.CalculateStrikeDistance(stormIntensity)
 
     local args = {
         dist = distance
     }
 
-    print("[ThunderServer] ⚡ LIGHTNING STRIKE ⚡ Distance: " .. distance .. " tiles")
+    print("[ThunderServer] ⚡ LIGHTNING STRIKE ⚡ Distance: " .. distance .. " tiles | Intensity: " .. string.format("%.2f", stormIntensity))
     sendServerCommand("ThunderMod", "LightningStrike", args)
 end
 
@@ -77,9 +126,9 @@ local function OnClientCommand(module, command, player, args)
     elseif command == "SetFrequency" then
         local freq = tonumber(args.frequency)
         if freq then
-            local oldFreq = ThunderServer.baseChance
-            ThunderServer.baseChance = freq
-            print("[ThunderServer] Frequency changed: " .. oldFreq .. " -> " .. freq)
+            local oldFreq = ThunderMod.Config.Thunder.probabilityMultiplier
+            ThunderMod.Config.Thunder.probabilityMultiplier = freq
+            print("[ThunderServer] Frequency multiplier changed: " .. oldFreq .. " -> " .. freq)
         else
             print("[ThunderServer] ERROR: Invalid frequency value: " .. tostring(args.frequency))
         end
@@ -155,25 +204,45 @@ function TestThunder(dist)
     return true
 end
 
---- Set thunder frequency from console
---- Usage: SetThunderFrequency(3.0)
+--- Set thunder frequency multiplier from console
+--- Usage: SetThunderFrequency(2.0) - Double frequency
 function SetThunderFrequency(freq)
     freq = freq or 1.0
-    local oldFreq = ThunderServer.baseChance
-    ThunderServer.baseChance = freq
-    print("[ThunderServer] Frequency changed: " .. oldFreq .. " -> " .. freq)
+    local oldFreq = ThunderMod.Config.Thunder.probabilityMultiplier
+    ThunderMod.Config.Thunder.probabilityMultiplier = freq
+    print("[ThunderServer] Frequency multiplier changed: " .. oldFreq .. " -> " .. freq)
     return true
+end
+
+-- Alias
+SetThunderMultiplier = SetThunderFrequency
+
+--- Analyze current storm intensity and probability
+--- Usage: GetStormIntensity()
+function GetStormIntensity()
+    local intensity = ThunderServer.CalculateStormIntensity()
+    local prob = ThunderServer.CalculateThunderProbability(intensity)
+    local cooldown = ThunderServer.CalculateCooldown(intensity)
+    local ticksPerStrike = (100 / prob) + cooldown
+    local secondsPerStrike = ticksPerStrike / 60
+    
+    print("[ThunderServer] === STORM ANALYSIS ===")
+    print("Intensity: " .. string.format("%.3f", intensity) .. " (0.0 - 1.0)")
+    print("Probability/Tick: " .. string.format("%.4f", prob) .. "%")
+    print("Est. Frequency: One strike every ~" .. string.format("%.1f", secondsPerStrike) .. " seconds")
+    print("Current Cooldown Setting: " .. math.floor(cooldown/60) .. "s")
+    print("================================")
 end
 
 --- Force thunder strike from console
 --- Usage: ForceThunder(200) or ForceThunder() for random distance
 function ForceThunder(dist)
-    dist = dist or ZombRand(50, 2500)
+    dist = dist or ThunderServer.CalculateStrikeDistance(ThunderServer.CalculateStormIntensity())
     print("[ThunderServer] ForceThunder called with dist=" .. tostring(dist))
     ThunderServer.TriggerStrike(dist)
     return true
 end
 
 print("[ThunderServer] ========== LOADED (Build 42.13) ==========")
-print("[ThunderServer] Console commands: ForceThunder(dist), TestThunder(dist), SetThunderFrequency(freq)")
+print("[ThunderServer] Console commands: ForceThunder(dist), TestThunder(dist), SetThunderFrequency(mult), GetStormIntensity()")
 print("[ThunderServer] Type any of these commands in the console to test thunder effects")
