@@ -81,7 +81,7 @@ The mod uses Project Zomboid's client-server architecture with networked events:
 -- Requirements for automatic thunder:
 - Cloud intensity > 0.2 (20%)
 - No active cooldown
-- Random chance per tick: baseChance (0.05) × cloudIntensity
+- Random chance per tick: baseChance (0.02) × cloudIntensity
 - Minimum cooldown: 10 seconds (600 ticks)
 - Variable cooldown: minCooldown + random(0 to intensityFactor × 1000 ticks)
 - Higher cloud intensity = shorter cooldown between strikes
@@ -227,6 +227,7 @@ To upload to Steam Workshop:
 - **New console commands:** `ThunderToggleLighting()` and `ThunderToggleIndoorDetection()` for feature control
 - **Build 42 lighting integration:** Uses new lighting propagation system that respects walls, windows, and room boundaries
 - **Performance optimized:** Automatic light cleanup, minimal memory overhead, efficient region queries
+- **Reduced base spawn chance:** Further reduced from 0.05 to 0.02 for more realistic thunder frequency
 
 ### v1.5.1 (Jan 2026) - Native Mode Completion & Compatibility
 - **Completed server-side Native Mode integration:** Added missing `OnNativeThunder` event handler to `Thunder_Server.lua` that maps game events to physics-based strikes

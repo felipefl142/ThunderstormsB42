@@ -9,7 +9,7 @@ ThunderServer = {}
 
 -- CONFIG
 ThunderServer.minClouds = 0.2
-ThunderServer.baseChance = 0.05  -- Adjusted chance (0.05% * intensity per tick)
+ThunderServer.baseChance = 0.02  -- Adjusted chance (0.02% * intensity per tick)
 ThunderServer.cooldownTimer = 0
 ThunderServer.minCooldown = 600  -- Minimum 10 seconds between strikes to prevent spam
 
