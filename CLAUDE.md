@@ -62,8 +62,8 @@ The mod uses Project Zomboid's client-server architecture with networked events:
 
 #### IsoRegions Integration (Client)
 - **Indoor/Outdoor Detection:** Uses `IsoGridSquare:getRoom()` to detect if player is in an enclosed space
-- **Sound Muffling:** Indoor thunder has reduced volume (30-50% reduction) to simulate wall absorption
-- **Distance-Based Modifier:** Closer thunder is more muffled indoors (0.5-0.7 multiplier range)
+- **Sound Muffling:** Indoor thunder has reduced volume (10-25% reduction) to simulate wall absorption
+- **Distance-Based Modifier:** Closer thunder is more muffled indoors (0.75-0.9 multiplier range)
 - **Room Detection:** Compatible with both vanilla buildings and player-built structures
 - **Debug Output:** Shows room name when player is indoors and debug mode is enabled
 
@@ -75,6 +75,7 @@ The mod uses Project Zomboid's client-server architecture with networked events:
 - **Color Simulation:** RGB ~(0.9, 0.9, 1.0) for realistic blue-white lightning
 - **Auto Cleanup:** Lights removed after 400ms using `IsoCell:removeLamppost()`
 - **Build 42 Compatibility:** Uses new lighting propagation system that respects walls and openings
+- **Volume Modifier:** Indoor sounds are muffled by 10-25% (0.75-0.9 multiplier) based on distance
 
 #### Thunder Triggering (Server)
 ```lua
@@ -109,12 +110,13 @@ All commands available in Lua console (backtick `` ` `` or `~` key):
 
 ```lua
 -- Force thunder at specific distance
-ForceThunder(200)       -- Close thunder
-ForceThunder(1000)      -- Medium thunder
-ForceThunder(7000)      -- Far thunder (new max: 8000 tiles)
+ForceThunder(200)       -- Close thunder (via server)
+ForceThunder(1000)      -- Medium thunder (via server)
+ForceThunder(7000)      -- Far thunder (via server, max: 8000 tiles)
 
 -- Test thunder effect directly (client-side)
-TestThunder(500)
+TestThunder(500)        -- May call server version in single player
+TestThunderClient(500)  -- Guaranteed client-side test (recommended)
 
 -- Adjust automatic thunder frequency
 SetThunderFrequency(0.5)   -- Default (less frequent)
@@ -216,6 +218,12 @@ To upload to Steam Workshop:
 - **Network optimization:** Only distance is transmitted; clients calculate flash/sound locally
 
 ## Recent Changes
+
+### v1.6.1 (Jan 2026) - Indoor Sound Balance & Debug Improvements
+- **Reduced indoor sound muffling:** Changed from 30-50% reduction to 10-25% reduction (0.75-0.9 multiplier)
+- **Improved debug logging:** Added detailed event registration logs and OnServerCommand debugging
+- **New client-only test command:** Added `TestThunderClient()` to avoid server/client naming conflicts in single player
+- **Enhanced command visibility:** Updated console help to distinguish between server and client commands
 
 ### v1.6 (Jan 2026) - IsoRegions & Lighting Integration
 - **Added IsoRegions indoor/outdoor detection:** Automatically detects when player is in an enclosed space using `IsoGridSquare:getRoom()`

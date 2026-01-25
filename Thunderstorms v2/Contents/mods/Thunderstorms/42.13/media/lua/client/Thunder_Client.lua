@@ -180,17 +180,26 @@ end
 
 -- 2. HANDLE SERVER COMMANDS
 local function OnServerCommand(module, command, args)
+    -- Debug: log ALL server commands when debug mode is on
+    if ThunderClient.debugMode then
+        print("[ThunderClient] OnServerCommand called: module=" .. tostring(module) .. ", command=" .. tostring(command))
+    end
+
     if module == "ThunderMod" then
         if command == "LightningStrike" then
             if ThunderClient.debugMode then
                 print("[ThunderClient] ⚡ Received LightningStrike from server (distance: " .. tostring(args.dist) .. " tiles)")
             end
             ThunderClient.DoStrike(args)
-        
+
         elseif command == "SetNativeMode" then
             local enabled = args.enabled
             ThunderMod.Config.UseNativeWeatherEvents = enabled
             print("[ThunderClient] Native Mode synced: " .. tostring(enabled))
+        else
+            if ThunderClient.debugMode then
+                print("[ThunderClient] Unknown ThunderMod command: " .. tostring(command))
+            end
         end
     end
 end
@@ -286,9 +295,9 @@ function ThunderClient.DoStrike(args)
     -- Check if player is indoors and reduce volume accordingly
     local indoorModifier = 1.0
     if ThunderClient.useIndoorDetection and ThunderClient.IsPlayerIndoors() then
-        -- Indoor sound is muffled (reduce volume by 30-50% depending on distance)
+        -- Indoor sound is muffled (reduce volume by 10-25% depending on distance)
         -- Closer thunder is more muffled indoors
-        indoorModifier = 0.5 + (distance / 8000) * 0.2 -- 0.5 to 0.7 range
+        indoorModifier = 0.75 + (distance / 8000) * 0.15 -- 0.75 to 0.9 range
         if ThunderClient.debugMode then
             print("[ThunderClient] Player is indoors, applying volume modifier: " .. string.format("%.2f", indoorModifier))
         end
@@ -409,12 +418,31 @@ local function OnGameStart()
     -- Don't create overlay yet, it will be created on demand in DoStrike
 end
 
-if Events.OnGameStart then Events.OnGameStart.Add(OnGameStart) end
-if Events.OnServerCommand then Events.OnServerCommand.Add(OnServerCommand) end
-if Events.OnRenderTick then Events.OnRenderTick.Add(ThunderClient.OnRenderTick) end
-if Events.OnTick then Events.OnTick.Add(ThunderClient.OnTick) end
-if Events.OnThunder then 
-    Events.OnThunder.Add(ThunderClient.OnNativeThunder) 
+if Events.OnGameStart then
+    Events.OnGameStart.Add(OnGameStart)
+    print("[ThunderClient] Registered OnGameStart")
+end
+
+if Events.OnServerCommand then
+    Events.OnServerCommand.Add(OnServerCommand)
+    print("[ThunderClient] Registered OnServerCommand")
+else
+    print("[ThunderClient] WARNING: Events.OnServerCommand is not available!")
+end
+
+if Events.OnRenderTick then
+    Events.OnRenderTick.Add(ThunderClient.OnRenderTick)
+    print("[ThunderClient] Registered OnRenderTick")
+end
+
+if Events.OnTick then
+    Events.OnTick.Add(ThunderClient.OnTick)
+    print("[ThunderClient] Registered OnTick")
+end
+
+if Events.OnThunder then
+    Events.OnThunder.Add(ThunderClient.OnNativeThunder)
+    print("[ThunderClient] Registered OnThunder (Native Mode support)")
 else
     print("[ThunderClient] WARNING: Events.OnThunder is not available in this version of Project Zomboid.")
 end
@@ -443,7 +471,19 @@ function ForceThunder(dist)
 end
 
 --- Test thunder effect directly on client (bypasses server, for debugging)
+--- Usage: TestThunderClient(200) or TestThunderClient() for default
+--- This function is client-only and avoids server/client naming conflicts
+function TestThunderClient(dist)
+    dist = dist or 500
+    print("[ThunderClient] Testing thunder effect at " .. tostring(dist) .. " tiles (client-side, direct)")
+
+    ThunderClient.DoStrike({dist = dist})
+    return true
+end
+
+--- Test thunder effect directly on client (bypasses server, for debugging)
 --- Usage: TestThunder(200) or TestThunder() for default
+--- NOTE: In single player, this may conflict with server's TestThunder. Use TestThunderClient() instead.
 function TestThunder(dist)
     dist = dist or 500
     print("[ThunderClient] Testing thunder effect at " .. tostring(dist) .. " tiles (client-side)")
@@ -520,10 +560,11 @@ function ThunderToggleIndoorDetection(enable)
 end
 
 print("[ThunderClient] Console commands:")
-print("  ForceThunder(dist)     - Trigger thunder at distance (via server)")
-print("  TestThunder(dist)      - Test thunder effect (client-side)")
-print("  SetThunderFrequency(f) - Set frequency multiplier")
-print("  SetNativeMode(bool)    - Toggle Native Mode (sync with game weather)")
+print("  ForceThunder(dist)        - Trigger thunder at distance (via server)")
+print("  TestThunder(dist)         - Test thunder effect (may call server in SP)")
+print("  TestThunderClient(dist)   - Test thunder effect (client-only, guaranteed)")
+print("  SetThunderFrequency(f)    - Set frequency multiplier")
+print("  SetNativeMode(bool)       - Toggle Native Mode (sync with game weather)")
 print("  ThunderToggleDebug(true/false) - Toggle debug logging")
 print("  ThunderToggleLighting(true/false) - Toggle dynamic lighting effects")
 print("  ThunderToggleIndoorDetection(true/false) - Toggle indoor sound muffling")
