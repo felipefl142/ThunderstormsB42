@@ -14,6 +14,9 @@ ThunderClient.delayedSounds = {}
 ThunderClient.flashSequence = {} -- Queue for multi-flash effect
 ThunderClient.overlay = nil
 ThunderClient.debugMode = false -- Set to true for detailed logging
+ThunderClient.activeLightSources = {} -- Track temporary light sources
+ThunderClient.useLighting = true -- Enable/disable dynamic lighting
+ThunderClient.useIndoorDetection = true -- Enable/disable indoor/outdoor sound modification
 
 -- 1. SETUP THE OVERLAY
 -- We create a UI element that acts as our "Flash Screen"
@@ -50,6 +53,129 @@ function ThunderClient.CreateOverlay()
 
     -- Don't add to UI manager yet - we'll add/remove it dynamically
     ThunderClient.overlay.isInUIManager = false
+end
+
+-- Helper function to check if player is indoors
+function ThunderClient.IsPlayerIndoors()
+    local player = getPlayer()
+    if not player then return false end
+
+    local square = player:getCurrentSquare()
+    if not square then return false end
+
+    -- Check if player is in a room
+    local room = square:getRoom()
+    if room then
+        if ThunderClient.debugMode then
+            print("[ThunderClient] Player is in room: " .. tostring(room:getName()))
+        end
+        return true
+    end
+
+    return false
+end
+
+-- Create temporary light sources for lightning flash
+function ThunderClient.CreateLightningFlash(intensity, duration)
+    if not ThunderClient.useLighting then return end
+
+    local player = getPlayer()
+    if not player then return end
+
+    local square = player:getCurrentSquare()
+    if not square then return end
+
+    local cell = getCell()
+    if not cell then return end
+
+    local x = square:getX()
+    local y = square:getY()
+    local z = square:getZ()
+
+    -- Lightning is white/blue-white
+    local r = 0.9 + (ZombRandFloat(0, 0.1))
+    local g = 0.9 + (ZombRandFloat(0, 0.1))
+    local b = 1.0
+
+    -- Radius based on intensity (brighter = larger area)
+    local radius = math.floor(10 + (intensity * 40)) -- 10-30 tile radius
+
+    if ThunderClient.debugMode then
+        print("[ThunderClient] Creating lightning light at (" .. x .. ", " .. y .. ", " .. z .. ") radius: " .. radius .. " intensity: " .. string.format("%.2f", intensity))
+    end
+
+    -- Create main light source at player position
+    local lightSource = cell:addLamppost(x, y, z, r, g, b, radius)
+    if lightSource then
+        table.insert(ThunderClient.activeLightSources, {
+            light = lightSource,
+            endTime = getTimestampMs() + (duration * 1000),
+            x = x,
+            y = y,
+            z = z
+        })
+    end
+
+    -- Create additional light sources in a pattern to simulate light entering through windows/doors
+    -- Only if player is indoors - light should come from multiple angles
+    if ThunderClient.IsPlayerIndoors() then
+        local offsets = {
+            {dx = 5, dy = 0},   -- East
+            {dx = -5, dy = 0},  -- West
+            {dx = 0, dy = 5},   -- South
+            {dx = 0, dy = -5},  -- North
+            {dx = 3, dy = 3},   -- SE
+            {dx = -3, dy = 3},  -- SW
+            {dx = 3, dy = -3},  -- NE
+            {dx = -3, dy = -3}  -- NW
+        }
+
+        for _, offset in ipairs(offsets) do
+            local offsetX = x + offset.dx
+            local offsetY = y + offset.dy
+            local offsetSquare = cell:getGridSquare(offsetX, offsetY, z)
+
+            if offsetSquare then
+                -- Smaller radius for ambient light sources
+                local ambientRadius = math.floor(radius * 0.6)
+                local ambientLight = cell:addLamppost(offsetX, offsetY, z, r * 0.8, g * 0.8, b * 0.9, ambientRadius)
+                if ambientLight then
+                    table.insert(ThunderClient.activeLightSources, {
+                        light = ambientLight,
+                        endTime = getTimestampMs() + (duration * 1000),
+                        x = offsetX,
+                        y = offsetY,
+                        z = z
+                    })
+                end
+            end
+        end
+
+        if ThunderClient.debugMode then
+            print("[ThunderClient] Created " .. #offsets .. " ambient light sources for indoor illumination")
+        end
+    end
+end
+
+-- Clean up expired light sources
+function ThunderClient.CleanupLights()
+    local now = getTimestampMs()
+    local cell = getCell()
+    if not cell then return end
+
+    for i = #ThunderClient.activeLightSources, 1, -1 do
+        local entry = ThunderClient.activeLightSources[i]
+        if now >= entry.endTime then
+            -- Remove the light source
+            if entry.light then
+                cell:removeLamppost(entry.light)
+                if ThunderClient.debugMode then
+                    print("[ThunderClient] Removed light source at (" .. entry.x .. ", " .. entry.y .. ", " .. entry.z .. ")")
+                end
+            end
+            table.remove(ThunderClient.activeLightSources, i)
+        end
+    end
 end
 
 -- 2. HANDLE SERVER COMMANDS
@@ -157,6 +283,19 @@ function ThunderClient.DoStrike(args)
     if volume < 0.1 then volume = 0.1 end
     if volume > 1.0 then volume = 1.0 end
 
+    -- Check if player is indoors and reduce volume accordingly
+    local indoorModifier = 1.0
+    if ThunderClient.useIndoorDetection and ThunderClient.IsPlayerIndoors() then
+        -- Indoor sound is muffled (reduce volume by 30-50% depending on distance)
+        -- Closer thunder is more muffled indoors
+        indoorModifier = 0.5 + (distance / 8000) * 0.2 -- 0.5 to 0.7 range
+        if ThunderClient.debugMode then
+            print("[ThunderClient] Player is indoors, applying volume modifier: " .. string.format("%.2f", indoorModifier))
+        end
+    end
+
+    volume = volume * indoorModifier
+
     if ThunderClient.debugMode then
         print("[ThunderClient] ⚡ Thunder strike at " .. distance .. " tiles: " .. numFlashes .. " flash(es), sound in " .. string.format("%.1f", delaySeconds) .. "s")
     end
@@ -235,6 +374,9 @@ function ThunderClient.OnRenderTick()
                 ThunderClient.overlay.isInUIManager = true
             end
 
+            -- Create lightning light sources
+            ThunderClient.CreateLightningFlash(flash.intensity, 0.4) -- 400ms duration
+
             table.remove(ThunderClient.flashSequence, i)
         end
     end
@@ -256,6 +398,9 @@ function ThunderClient.OnRenderTick()
             end
         end
     end
+
+    -- Clean up expired light sources
+    ThunderClient.CleanupLights()
 end
 
 -- 4. INITIALIZATION
@@ -340,7 +485,7 @@ end
 function SetNativeMode(enabled)
     if enabled == nil then enabled = true end
     print("[ThunderClient] Requesting Native Mode: " .. tostring(enabled))
-    
+
     local player = getPlayer()
     if player then
         sendClientCommand(player, "ThunderMod", "SetNativeMode", {enabled = enabled})
@@ -350,9 +495,35 @@ function SetNativeMode(enabled)
     return enabled
 end
 
+--- Toggle dynamic lighting effects
+--- Usage: ThunderToggleLighting(true/false) or ThunderToggleLighting() to toggle
+function ThunderToggleLighting(enable)
+    if enable == nil then
+        ThunderClient.useLighting = not ThunderClient.useLighting
+    else
+        ThunderClient.useLighting = enable
+    end
+    print("[ThunderClient] Dynamic lighting: " .. (ThunderClient.useLighting and "ENABLED" or "DISABLED"))
+    return ThunderClient.useLighting
+end
+
+--- Toggle indoor/outdoor detection
+--- Usage: ThunderToggleIndoorDetection(true/false) or ThunderToggleIndoorDetection() to toggle
+function ThunderToggleIndoorDetection(enable)
+    if enable == nil then
+        ThunderClient.useIndoorDetection = not ThunderClient.useIndoorDetection
+    else
+        ThunderClient.useIndoorDetection = enable
+    end
+    print("[ThunderClient] Indoor detection: " .. (ThunderClient.useIndoorDetection and "ENABLED" or "DISABLED"))
+    return ThunderClient.useIndoorDetection
+end
+
 print("[ThunderClient] Console commands:")
 print("  ForceThunder(dist)     - Trigger thunder at distance (via server)")
 print("  TestThunder(dist)      - Test thunder effect (client-side)")
 print("  SetThunderFrequency(f) - Set frequency multiplier")
 print("  SetNativeMode(bool)    - Toggle Native Mode (sync with game weather)")
 print("  ThunderToggleDebug(true/false) - Toggle debug logging")
+print("  ThunderToggleLighting(true/false) - Toggle dynamic lighting effects")
+print("  ThunderToggleIndoorDetection(true/false) - Toggle indoor sound muffling")

@@ -60,6 +60,22 @@ The mod uses Project Zomboid's client-server architecture with networked events:
 
 ### Key Systems
 
+#### IsoRegions Integration (Client)
+- **Indoor/Outdoor Detection:** Uses `IsoGridSquare:getRoom()` to detect if player is in an enclosed space
+- **Sound Muffling:** Indoor thunder has reduced volume (30-50% reduction) to simulate wall absorption
+- **Distance-Based Modifier:** Closer thunder is more muffled indoors (0.5-0.7 multiplier range)
+- **Room Detection:** Compatible with both vanilla buildings and player-built structures
+- **Debug Output:** Shows room name when player is indoors and debug mode is enabled
+
+#### Lighting System Integration (Client)
+- **Dynamic Light Sources:** Creates temporary lightning flashes using `IsoCell:addLamppost()`
+- **Main Flash:** Single bright white/blue light source at player position (10-30 tile radius)
+- **Multi-Point Illumination:** When indoors, creates 8 additional light sources in cardinal/diagonal directions
+- **Window/Door Propagation:** Ambient lights simulate lightning entering through openings
+- **Color Simulation:** RGB ~(0.9, 0.9, 1.0) for realistic blue-white lightning
+- **Auto Cleanup:** Lights removed after 400ms using `IsoCell:removeLamppost()`
+- **Build 42 Compatibility:** Uses new lighting propagation system that respects walls and openings
+
 #### Thunder Triggering (Server)
 ```lua
 -- Requirements for automatic thunder:
@@ -113,6 +129,16 @@ ThunderToggleDebug(false) -- Disable
 -- Toggle Native Mode (sync with game weather)
 SetNativeMode(true)       -- Enable Native Mode
 SetNativeMode(false)      -- Disable Native Mode (use custom generator)
+
+-- Toggle dynamic lightning lighting effects
+ThunderToggleLighting(true)   -- Enable lighting
+ThunderToggleLighting(false)  -- Disable lighting
+ThunderToggleLighting()       -- Toggle current state
+
+-- Toggle indoor/outdoor sound detection
+ThunderToggleIndoorDetection(true)   -- Enable indoor muffling
+ThunderToggleIndoorDetection(false)  -- Disable indoor muffling
+ThunderToggleIndoorDetection()       -- Toggle current state
 
 -- Check current cloud intensity
 print(getClimateManager():getCloudIntensity())
@@ -168,6 +194,9 @@ Common issues:
 - **Mouse/keyboard broken after thunder:** Overlay not removed from UI manager; check `isInUIManager` flag logic
 - **No automatic thunder:** Cloud intensity likely <0.2; check with `getClimateManager():getCloudIntensity()`
 - **Silent thunder:** Check distance <8000 tiles and volume calculation; verify 3D sounds defined in scripts
+- **No lightning lights appearing:** Verify `ThunderClient.useLighting` is true; check that `getCell()` returns valid IsoCell
+- **Lights not disappearing:** Check `CleanupLights()` is called in `OnRenderTick()`; verify timestamp calculations
+- **Indoor detection not working:** Ensure player is in a room with proper IsoRegion data; try rebuilding walls to refresh regions
 
 ## Publishing
 
@@ -187,6 +216,17 @@ To upload to Steam Workshop:
 - **Network optimization:** Only distance is transmitted; clients calculate flash/sound locally
 
 ## Recent Changes
+
+### v1.6 (Jan 2026) - IsoRegions & Lighting Integration
+- **Added IsoRegions indoor/outdoor detection:** Automatically detects when player is in an enclosed space using `IsoGridSquare:getRoom()`
+- **Indoor sound muffling:** Thunder volume reduced by 30-50% when indoors, with distance-based modifier (closer = more muffled)
+- **Dynamic lightning lighting:** Creates temporary light sources using `IsoCell:addLamppost()` with 400ms duration
+- **Multi-point illumination:** When indoors, creates 8 ambient light sources in cardinal/diagonal directions to simulate light entering through windows/doors
+- **Realistic light colors:** White/blue-white RGB values (~0.9, 0.9, 1.0) simulate actual lightning color temperature
+- **Adaptive light radius:** Scales with flash intensity (10-30 tile radius) and distance from strike
+- **New console commands:** `ThunderToggleLighting()` and `ThunderToggleIndoorDetection()` for feature control
+- **Build 42 lighting integration:** Uses new lighting propagation system that respects walls, windows, and room boundaries
+- **Performance optimized:** Automatic light cleanup, minimal memory overhead, efficient region queries
 
 ### v1.5.1 (Jan 2026) - Native Mode Completion & Compatibility
 - **Completed server-side Native Mode integration:** Added missing `OnNativeThunder` event handler to `Thunder_Server.lua` that maps game events to physics-based strikes
