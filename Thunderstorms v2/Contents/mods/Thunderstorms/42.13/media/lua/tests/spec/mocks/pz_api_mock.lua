@@ -82,6 +82,9 @@ function PZMock.createSquare(config)
 
   return {
     room = config.room,
+    x = config.x or 0,
+    y = config.y or 0,
+    z = config.z or 0,
 
     getRoom = function(self)
       return self.room
@@ -89,6 +92,18 @@ function PZMock.createSquare(config)
 
     setRoom = function(self, room)
       self.room = room
+    end,
+
+    getX = function(self)
+      return self.x
+    end,
+
+    getY = function(self)
+      return self.y
+    end,
+
+    getZ = function(self)
+      return self.z
     end
   }
 end
@@ -106,6 +121,10 @@ function PZMock.createPlayer(config)
       return self.square
     end,
 
+    getCurrentSquare = function(self)
+      return self.square
+    end,
+
     setSquare = function(self, newSquare)
       self.square = newSquare
     end
@@ -116,6 +135,7 @@ end
 function PZMock.createCell()
   local cell = {
     lampposts = {},
+    gridSquares = {},
 
     addLamppost = function(self, x, y, z, radius, r, g, b)
       local lamppost = {
@@ -136,6 +156,15 @@ function PZMock.createCell()
         end
       end
       return false
+    end,
+
+    getGridSquare = function(self, x, y, z)
+      -- Create a new square if it doesn't exist
+      local key = x .. "," .. y .. "," .. z
+      if not self.gridSquares[key] then
+        self.gridSquares[key] = PZMock.createSquare({x = x, y = y, z = z})
+      end
+      return self.gridSquares[key]
     end,
 
     _clearLampposts = function(self)
@@ -186,14 +215,19 @@ function PZMock.createSoundManager()
 end
 
 -- Create ISUIElement mock
-function PZMock.createISUIElement()
+function PZMock.createISUIElement(config)
+  config = config or {}
+
   local element = {
-    x = 0,
-    y = 0,
-    width = 0,
-    height = 0,
+    x = config.x or 0,
+    y = config.y or 0,
+    width = config.width or 0,
+    height = config.height or 0,
     backgroundColor = {r=0, g=0, b=0, a=0},
     visible = true,
+    alwaysOnTop = false,
+    isInUIManager = false,
+    inUIManager = false,
     ignoreHeightChange = true,
     ignoreLossControl = true,
 
@@ -221,12 +255,30 @@ function PZMock.createISUIElement()
       self.visible = visible
     end,
 
+    setAlwaysOnTop = function(self, alwaysOnTop)
+      self.alwaysOnTop = alwaysOnTop
+    end,
+
     addToUIManager = function(self)
+      self.isInUIManager = true
       self.inUIManager = true
     end,
 
     removeFromUIManager = function(self)
+      self.isInUIManager = false
       self.inUIManager = false
+    end,
+
+    drawRect = function(self, x, y, w, h, alpha, r, g, b)
+      -- Mock implementation - just record the call
+    end,
+
+    getWidth = function(self)
+      return self.width
+    end,
+
+    getHeight = function(self)
+      return self.height
     end
   }
 
@@ -445,8 +497,14 @@ function PZMock.installAll(config)
   _G.isClient = PZMock.isClient
   _G.isServer = PZMock.isServer
 
-  -- ISUIElement
-  _G.ISUIElement = PZMock.createISUIElement()
+  -- ISUIElement (as a class with constructor)
+  _G.ISUIElement = {
+    new = function(self, x, y, width, height)
+      return PZMock.createISUIElement({x = x, y = y, width = width, height = height})
+    end,
+
+    render = function(self) end
+  }
 
   return {
     climateManager = climateManager,

@@ -254,16 +254,24 @@ function ThunderClient.DoStrike(args)
     if brightness > 0.5 then brightness = 0.5 end
 
     -- Queue multi-flash sequence
-    -- Simplified pattern: Mostly single flashes, occasional double flash
+    -- Flash pattern: 25% single, 50% double, 25% triple flash
     local numFlashes = 1
-    if ZombRand(100) < 30 then numFlashes = 2 end -- 30% chance of double flash
+    local roll = ZombRand(100)
+
+    if roll < 25 then
+        numFlashes = 1  -- 25% chance: single flash
+    elseif roll < 75 then
+        numFlashes = 2  -- 50% chance: double flash
+    else
+        numFlashes = 3  -- 25% chance: triple flash
+    end
 
     local now = getTimestampMs()
     local cumulativeDelay = 0
 
     for i = 1, numFlashes do
         if i > 1 then
-            -- Longer gap between pulses for "double strike" feel (40-100ms)
+            -- Fast, equally spaced flashes (40-100ms)
             cumulativeDelay = cumulativeDelay + ZombRand(40, 101)
         end
 

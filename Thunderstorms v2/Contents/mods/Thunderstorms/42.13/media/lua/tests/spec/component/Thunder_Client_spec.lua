@@ -332,7 +332,7 @@ describe("Thunder_Client", function()
 
       local sound = ThunderClient.delayedSounds[#ThunderClient.delayedSounds]
       assert.is_not_nil(sound)
-      assert.is_true(string.find(sound.soundName, "ThunderClose") ~= nil)
+      assert.is_true(string.find(sound.sound, "ThunderClose") ~= nil)
     end)
 
     it("should use ThunderMedium for distance < 800", function()
@@ -340,7 +340,7 @@ describe("Thunder_Client", function()
 
       local sound = ThunderClient.delayedSounds[#ThunderClient.delayedSounds]
       assert.is_not_nil(sound)
-      assert.is_true(string.find(sound.soundName, "ThunderMedium") ~= nil)
+      assert.is_true(string.find(sound.sound, "ThunderMedium") ~= nil)
     end)
 
     it("should use ThunderFar for distance >= 800", function()
@@ -348,7 +348,7 @@ describe("Thunder_Client", function()
 
       local sound = ThunderClient.delayedSounds[#ThunderClient.delayedSounds]
       assert.is_not_nil(sound)
-      assert.is_true(string.find(sound.soundName, "ThunderFar") ~= nil)
+      assert.is_true(string.find(sound.sound, "ThunderFar") ~= nil)
     end)
   end)
 
@@ -482,8 +482,8 @@ describe("Thunder_Client", function()
     it("should play sounds when delay expires", function()
       local playTime = PZMock.currentTime + 500
       table.insert(ThunderClient.delayedSounds, {
-        soundName = "MyThunder.ThunderClose-long",
-        playTime = playTime,
+        sound = "MyThunder.ThunderClose-long",
+        time = playTime,
         volume = 1.0
       })
 
@@ -499,8 +499,8 @@ describe("Thunder_Client", function()
     it("should not play sounds before delay expires", function()
       local playTime = PZMock.currentTime + 1000
       table.insert(ThunderClient.delayedSounds, {
-        soundName = "MyThunder.ThunderMedium-long",
-        playTime = playTime,
+        sound = "MyThunder.ThunderMedium-long",
+        time = playTime,
         volume = 0.8
       })
 
@@ -516,8 +516,8 @@ describe("Thunder_Client", function()
     it("should remove played sounds from queue", function()
       local playTime = PZMock.currentTime + 100
       table.insert(ThunderClient.delayedSounds, {
-        soundName = "MyThunder.ThunderFar-short",
-        playTime = playTime,
+        sound = "MyThunder.ThunderFar-short",
+        time = playTime,
         volume = 0.5
       })
 
@@ -537,7 +537,7 @@ describe("Thunder_Client", function()
     it("should trigger flash when sequence has pending flashes", function()
       table.insert(ThunderClient.flashSequence, {
         intensity = 0.4,
-        delay = 0
+        start = PZMock.currentTime
       })
 
       ThunderClient.OnRenderTick()
@@ -549,7 +549,7 @@ describe("Thunder_Client", function()
       local triggerTime = PZMock.currentTime + 200
       table.insert(ThunderClient.flashSequence, {
         intensity = 0.3,
-        delay = triggerTime
+        start = triggerTime
       })
 
       ThunderClient.OnRenderTick()
@@ -569,7 +569,7 @@ describe("Thunder_Client", function()
     it("should remove triggered flashes from sequence", function()
       table.insert(ThunderClient.flashSequence, {
         intensity = 0.2,
-        delay = 0
+        start = PZMock.currentTime
       })
 
       ThunderClient.OnRenderTick()
@@ -582,7 +582,7 @@ describe("Thunder_Client", function()
 
       table.insert(ThunderClient.flashSequence, {
         intensity = 0.5,
-        delay = 0
+        start = PZMock.currentTime
       })
 
       ThunderClient.OnRenderTick()

@@ -175,6 +175,11 @@ describe("Thunder_UI (Disabled)", function()
   describe("Command Structure (for future buttons)", function()
     it("should have command functions that return values", function()
       -- Commands should return true/false for success feedback
+      -- Load client module if not already loaded
+      if not _G.ThunderToggleDebug then
+        require "client/Thunder_Client"
+      end
+
       local result = ThunderToggleDebug(true)
       -- Result may be nil or boolean, both are acceptable
       assert.is_true(result == nil or type(result) == "boolean")
