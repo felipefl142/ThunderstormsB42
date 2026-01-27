@@ -20,8 +20,8 @@ describe("Thunder_Server", function()
     })
 
     -- Load modules
-    ThunderMod = require "shared/Thunder_Shared"
-    require "server/Thunder_Server"
+    ThunderMod = require "Thunder_Shared"
+    require "Thunder_Server"
     -- ThunderServer is now a global
   end)
 

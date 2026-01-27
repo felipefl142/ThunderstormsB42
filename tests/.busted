@@ -1,0 +1,10 @@
+return {
+  default = {
+    verbose = true,
+    output = "utfTerminal",
+    pattern = "_spec",
+    ROOT = {"spec/"},
+    lpath = "spec/?.lua;spec/?/init.lua;../Thunderstorms v2/Contents/mods/Thunderstorms/42.13/media/lua/?.lua;../Thunderstorms v2/Contents/mods/Thunderstorms/42.13/media/lua/shared/?.lua;../Thunderstorms v2/Contents/mods/Thunderstorms/42.13/media/lua/client/?.lua;../Thunderstorms v2/Contents/mods/Thunderstorms/42.13/media/lua/server/?.lua",
+    helper = "spec/spec_helper.lua",
+  }
+}

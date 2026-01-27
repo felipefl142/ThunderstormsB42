@@ -6,7 +6,7 @@ describe("Thunder_Shared", function()
 
   setup(function()
     -- Load the shared module
-    ThunderMod = require "shared/Thunder_Shared"
+    ThunderMod = require "Thunder_Shared"
   end)
 
   describe("Module Structure", function()

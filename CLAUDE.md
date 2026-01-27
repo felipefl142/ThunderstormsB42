@@ -219,7 +219,7 @@ The mod now includes a comprehensive test suite using the Busted testing framewo
 
 ### Test Suite Overview
 
-**Location:** `42.13/media/lua/tests/`
+**Location:** `tests/` (Project Root)
 
 **Structure:**
 ```

@@ -126,7 +126,7 @@ All original test files moved to `legacy/` folder:
 - `Thunder_UI_Test.lua` → `legacy/Thunder_UI_Test.lua`
 - `RunAllTests.lua` → `legacy/RunAllTests.lua`
 
-Still runnable from Lua console: `require "tests/legacy/RunAllTests"`
+Still runnable from Lua console (if tests folder is in mod directory): `require "tests/legacy/RunAllTests"`
 
 ### 6. Documentation ✅
 
@@ -187,7 +187,7 @@ Network integration test structure fully implemented:
 ### Run All Tests
 
 ```bash
-cd "/home/felipefrl/Zomboid/Workshop/Thunderstorms v2/Contents/mods/Thunderstorms/42.13/media/lua/tests"
+cd tests
 ./run_busted.sh
 ```
 

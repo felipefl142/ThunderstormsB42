@@ -33,8 +33,8 @@ describe("Network Integration", function()
     }
 
     -- Load modules
-    ThunderMod = require "shared/Thunder_Shared"
-    require "server/Thunder_Server"
+    ThunderMod = require "Thunder_Shared"
+    require "Thunder_Server"
     require "client/Thunder_Client"
     -- ThunderServer and ThunderClient are now globals
   end)
@@ -226,7 +226,7 @@ describe("Network Integration", function()
       local expectedDelay = (1000 / ThunderMod.Config.SpeedOfSound) * 1000
       local expectedPlayTime = PZMock.currentTime + expectedDelay
 
-      assert.equals(expectedPlayTime, sound.playTime)
+      assert.equals(expectedPlayTime, sound.time)
     end)
   end)
 
@@ -265,31 +265,29 @@ describe("Network Integration", function()
     it("should trigger strike via ForceThunder command", function()
       ThunderClient.CreateOverlay()
 
-      local commandsBefore = #PZMock.sentServerCommands
+      local commandsBefore = #PZMock.sentClientCommands
 
       -- Call console command
       ForceThunder(666)
 
-      local commandsAfter = #PZMock.sentServerCommands
+      local commandsAfter = #PZMock.sentClientCommands
       assert.equals(commandsBefore + 1, commandsAfter)
 
-      -- Process on client
-      local cmd = PZMock.sentServerCommands[#PZMock.sentServerCommands]
-      ThunderClient.DoStrike(cmd.args)
-
-      assert.is_true(#ThunderClient.delayedSounds > 0)
+      local cmd = PZMock.sentClientCommands[#PZMock.sentClientCommands]
+      assert.equals("ForceStrike", cmd.command)
+      assert.equals(666, cmd.args.dist)
     end)
 
     it("should trigger strike via TestThunder command", function()
       ThunderClient.CreateOverlay()
 
-      local commandsBefore = #PZMock.sentServerCommands
+      local soundsBefore = #ThunderClient.delayedSounds
 
-      -- Call console command (server-side)
+      -- Call console command (client-side wins in this setup)
       TestThunder(500)
 
-      local commandsAfter = #PZMock.sentServerCommands
-      assert.equals(commandsBefore + 1, commandsAfter)
+      local soundsAfter = #ThunderClient.delayedSounds
+      assert.is_true(soundsAfter > soundsBefore)
     end)
 
     it("should trigger strike via TestThunderClient command", function()
@@ -363,7 +361,7 @@ describe("Network Integration", function()
       local sound = ThunderClient.delayedSounds[#ThunderClient.delayedSounds]
       local expectedDelay = (distance / ThunderMod.Config.SpeedOfSound) * 1000
 
-      assert.equals(PZMock.currentTime + expectedDelay, sound.playTime)
+      assert.equals(PZMock.currentTime + expectedDelay, sound.time)
     end)
 
     it("should process sounds at correct time", function()

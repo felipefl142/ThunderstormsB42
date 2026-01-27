@@ -48,7 +48,9 @@ busted spec/component/Thunder_Client_spec.lua
 
 ### Legacy Tests (In-Game Console)
 
-The original test files are preserved in the `legacy/` folder. From Lua console in-game:
+The original test files are preserved in the `legacy/` folder. To run these in-game, you must copy the `tests` directory into the mod's lua folder (`media/lua/tests`).
+
+Then from Lua console in-game:
 
 ```lua
 require "tests/legacy/RunAllTests"

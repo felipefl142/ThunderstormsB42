@@ -137,7 +137,7 @@ function PZMock.createCell()
     lampposts = {},
     gridSquares = {},
 
-    addLamppost = function(self, x, y, z, radius, r, g, b)
+    addLamppost = function(self, x, y, z, r, g, b, radius)
       local lamppost = {
         x = x, y = y, z = z,
         radius = radius,

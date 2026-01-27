@@ -15,12 +15,12 @@ describe("Thunder_UI (Disabled)", function()
     PZMock.installAll()
 
     -- Load modules
-    ThunderMod = require "shared/Thunder_Shared"
+    ThunderMod = require "Thunder_Shared"
 
     -- Thunder_UI may not load properly due to early return
     -- We'll check if it exists
     local success, result = pcall(function()
-      return require "client/Thunder_UI"
+      return require "Thunder_UI"
     end)
 
     if success then
@@ -177,7 +177,7 @@ describe("Thunder_UI (Disabled)", function()
       -- Commands should return true/false for success feedback
       -- Load client module if not already loaded
       if not _G.ThunderToggleDebug then
-        require "client/Thunder_Client"
+        require "Thunder_Client"
       end
 
       local result = ThunderToggleDebug(true)

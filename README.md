@@ -44,7 +44,7 @@ For developers or contributors, the repository is structured as follows:
         *   `lua/client/`: Client-side visual and audio handling (`Thunder_Client.lua`).
         *   `lua/server/`: Server-side event coordination (`Thunder_Server.lua`).
         *   `sound/`: Custom audio assets (.ogg).
-        *   `lua/tests/`: Comprehensive test suite using Busted framework.
+*   `tests/`: Comprehensive test suite using Busted framework (located at project root).
 
 ## 🧪 Testing
 
@@ -59,7 +59,7 @@ The mod includes a professional test suite using the Busted testing framework:
 ### Running Tests
 
 ```bash
-cd "Thunderstorms v2/Contents/mods/Thunderstorms/42.13/media/lua/tests"
+cd tests
 ./run_busted.sh
 ```
 
