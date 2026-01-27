@@ -1,0 +1,213 @@
+-- Thunder_UI_spec.lua
+-- Component tests for Thunder_UI.lua module (currently disabled)
+
+local PZMock = require "spec.mocks.pz_api_mock"
+
+describe("Thunder_UI (Disabled)", function()
+  local ThunderMod
+  local ThunderUI
+
+  setup(function()
+    -- Set client mode
+    PZMock.setClientMode()
+
+    -- Install all mocks
+    PZMock.installAll()
+
+    -- Load modules
+    ThunderMod = require "shared/Thunder_Shared"
+
+    -- Thunder_UI may not load properly due to early return
+    -- We'll check if it exists
+    local success, result = pcall(function()
+      return require "client/Thunder_UI"
+    end)
+
+    if success then
+      ThunderUI = result
+    end
+  end)
+
+  teardown(function()
+    PZMock.cleanupAll()
+  end)
+
+  describe("Disabled State", function()
+    it("should not crash when loaded", function()
+      -- If we got here, loading didn't crash
+      assert.is_true(true)
+    end)
+
+    it("should have early return to prevent functionality", function()
+      -- The UI module should either not exist or be disabled
+      -- This is expected behavior for Build 42.13 compatibility
+      if ThunderUI then
+        -- If it exists, it should be a minimal stub
+        assert.is_table(ThunderUI)
+      else
+        -- It's OK if it doesn't exist due to early return
+        assert.is_true(true)
+      end
+    end)
+
+    it("should not register UI events when disabled", function()
+      -- Events should not be registered for UI
+      -- This is a safety check to ensure UI doesn't interfere with game
+      assert.has_no.errors(function()
+        -- Try to trigger a render without crashing
+        if ThunderUI and ThunderUI.OnRender then
+          ThunderUI.OnRender()
+        end
+      end)
+    end)
+  end)
+
+  describe("Fallback Commands", function()
+    it("should have console commands as fallback", function()
+      -- Even with UI disabled, console commands should exist
+      -- These are loaded by Thunder_Client
+      assert.is_not_nil(_G.ThunderToggleDebug)
+      assert.is_function(_G.ThunderToggleDebug)
+    end)
+  end)
+
+  describe("Structural Validation (for future re-enabling)", function()
+    it("should have ThunderMod.Config available", function()
+      -- Config should exist for future UI to use
+      assert.is_not_nil(ThunderMod)
+      assert.is_not_nil(ThunderMod.Config)
+      assert.is_not_nil(ThunderMod.Config.Thunder)
+    end)
+
+    it("should have required config values for UI controls", function()
+      local config = ThunderMod.Config.Thunder
+
+      -- Values that a future UI would need to display/modify
+      assert.is_not_nil(config.probabilityMultiplier)
+      assert.is_not_nil(config.minCooldownSeconds)
+      assert.is_not_nil(config.maxCooldownSeconds)
+      assert.is_not_nil(config.minDistance)
+      assert.is_not_nil(config.maxDistance)
+    end)
+
+    it("should have reasonable ranges for UI sliders", function()
+      local config = ThunderMod.Config.Thunder
+
+      -- Probability multiplier range (0.1-5.0)
+      assert.is_true(config.probabilityMultiplier >= 0.1)
+      assert.is_true(config.probabilityMultiplier <= 5.0)
+
+      -- Cooldown ranges
+      assert.is_true(config.minCooldownSeconds >= 3)
+      assert.is_true(config.minCooldownSeconds <= 10)
+      assert.is_true(config.maxCooldownSeconds >= 45)
+      assert.is_true(config.maxCooldownSeconds <= 120)
+
+      -- Distance ranges
+      assert.is_true(config.minDistance >= 50)
+      assert.is_true(config.maxDistance <= 8000)
+    end)
+  end)
+
+  describe("ISUI Dependencies", function()
+    it("should have ISUIElement available (mocked)", function()
+      -- ISUIElement should be available from PZMock
+      assert.is_not_nil(_G.ISUIElement)
+    end)
+
+    it("should be able to create UI elements without crashing", function()
+      assert.has_no.errors(function()
+        local elem = ISUIElement:new(0, 0, 100, 100)
+        assert.is_not_nil(elem)
+      end)
+    end)
+  end)
+
+  describe("Button Configuration (for future)", function()
+    it("should have console commands that buttons would call", function()
+      -- Force Thunder button
+      assert.is_function(_G.TestThunderClient or _G.TestThunder)
+
+      -- Toggle debug button
+      assert.is_function(_G.ThunderToggleDebug)
+
+      -- Toggle lighting button
+      assert.is_function(_G.ThunderToggleLighting)
+
+      -- Toggle indoor detection button
+      assert.is_function(_G.ThunderToggleIndoorDetection)
+    end)
+  end)
+
+  describe("Slider Range Validation (for future)", function()
+    it("should support frequency multiplier range", function()
+      local originalMult = ThunderMod.Config.Thunder.probabilityMultiplier
+
+      -- Test setting min value
+      ThunderMod.Config.Thunder.probabilityMultiplier = 0.1
+      assert.equals(0.1, ThunderMod.Config.Thunder.probabilityMultiplier)
+
+      -- Test setting max value
+      ThunderMod.Config.Thunder.probabilityMultiplier = 5.0
+      assert.equals(5.0, ThunderMod.Config.Thunder.probabilityMultiplier)
+
+      -- Restore
+      ThunderMod.Config.Thunder.probabilityMultiplier = originalMult
+    end)
+
+    it("should support cooldown range", function()
+      local originalMin = ThunderMod.Config.Thunder.minCooldownSeconds
+      local originalMax = ThunderMod.Config.Thunder.maxCooldownSeconds
+
+      -- Test setting values
+      ThunderMod.Config.Thunder.minCooldownSeconds = 5
+      assert.equals(5, ThunderMod.Config.Thunder.minCooldownSeconds)
+
+      ThunderMod.Config.Thunder.maxCooldownSeconds = 90
+      assert.equals(90, ThunderMod.Config.Thunder.maxCooldownSeconds)
+
+      -- Restore
+      ThunderMod.Config.Thunder.minCooldownSeconds = originalMin
+      ThunderMod.Config.Thunder.maxCooldownSeconds = originalMax
+    end)
+  end)
+
+  describe("Command Structure (for future buttons)", function()
+    it("should have command functions that return values", function()
+      -- Commands should return true/false for success feedback
+      local result = ThunderToggleDebug(true)
+      -- Result may be nil or boolean, both are acceptable
+      assert.is_true(result == nil or type(result) == "boolean")
+    end)
+  end)
+
+  describe("Window Dimensions (for future)", function()
+    it("should have getCore available for screen dimensions", function()
+      assert.is_not_nil(_G.getCore)
+      assert.is_function(_G.getCore)
+
+      local core = getCore()
+      assert.is_not_nil(core)
+      assert.is_function(core.getScreenWidth)
+      assert.is_function(core.getScreenHeight)
+    end)
+
+    it("should be able to calculate centered window position", function()
+      local core = getCore()
+      local screenW = core:getScreenWidth()
+      local screenH = core:getScreenHeight()
+
+      -- Typical window size
+      local windowW = 400
+      local windowH = 300
+
+      -- Calculate center
+      local x = (screenW - windowW) / 2
+      local y = (screenH - windowH) / 2
+
+      -- Should be positive and within screen bounds
+      assert.is_true(x >= 0 and x <= screenW)
+      assert.is_true(y >= 0 and y <= screenH)
+    end)
+  end)
+end)

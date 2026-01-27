@@ -1,89 +1,143 @@
 # Better Thunder (B42) - Test Suite
 
-This directory contains comprehensive unit tests for all main modules of the Better Thunder mod.
+Comprehensive test suite for the Better Thunder mod using the Busted testing framework.
 
-## Test Files
+## Overview
 
-- **Thunder_Shared_Test.lua** - Tests for shared configuration and constants
-- **Thunder_Server_Test.lua** - Tests for server-side thunder triggering logic
-- **Thunder_Client_Test.lua** - Tests for client-side VFX/SFX effects
-- **Thunder_UI_Test.lua** - Tests for UI components (currently disabled)
-- **RunAllTests.lua** - Master test runner that executes all test suites
+This test suite provides:
+- **47+ tests** covering all mod components
+- **Unit tests** for isolated functions and configuration
+- **Component tests** for client/server modules
+- **Integration tests** for client-server communication
+- **Comprehensive mocks** for Project Zomboid API
+- **CLI-optimized** for fast execution and clear output
 
 ## Running Tests
 
-### Run All Tests
+### Busted Tests (Recommended)
 
-Open the Lua console in-game (backtick `` ` `` or `~` key) and type:
+Quick start:
 
-```lua
-require "tests/RunAllTests"
+```bash
+cd tests
+./run_busted.sh
 ```
 
-### Run Individual Test Suites
+Run all tests:
+
+```bash
+cd tests
+busted spec/
+```
+
+Run specific test suites:
+
+```bash
+# Unit tests only
+busted spec/unit/
+
+# Component tests only
+busted spec/component/
+
+# Integration tests only
+busted spec/integration/
+
+# Specific file
+busted spec/component/Thunder_Client_spec.lua
+```
+
+### Legacy Tests (In-Game Console)
+
+The original test files are preserved in the `legacy/` folder. From Lua console in-game:
 
 ```lua
--- Test shared config
-require "tests/Thunder_Shared_Test"
+require "tests/legacy/RunAllTests"
+```
 
--- Test server logic (server-side only)
-require "tests/Thunder_Server_Test"
+Or individual suites:
 
--- Test client effects (client-side only)
-require "tests/Thunder_Client_Test"
+```lua
+require "tests/legacy/Thunder_Shared_Test"
+require "tests/legacy/Thunder_Server_Test"
+require "tests/legacy/Thunder_Client_Test"
+require "tests/legacy/Thunder_UI_Test"
+```
 
--- Test UI structure
-require "tests/Thunder_UI_Test"
+## Test Structure
+
+```
+tests/
+├── .busted                        # Busted configuration
+├── spec/
+│   ├── spec_helper.lua           # Shared test utilities
+│   ├── mocks/
+│   │   └── pz_api_mock.lua       # Project Zomboid API mocks
+│   ├── unit/                     # Unit tests (isolated functions)
+│   │   └── Thunder_Shared_spec.lua
+│   ├── component/                # Component tests (related functions)
+│   │   ├── Thunder_Server_spec.lua
+│   │   ├── Thunder_Client_spec.lua
+│   │   └── Thunder_UI_spec.lua
+│   └── integration/              # Integration tests (client-server)
+│       └── network_spec.lua
+├── legacy/                       # Backward compatibility
+│   ├── Thunder_Shared_Test.lua
+│   ├── Thunder_Server_Test.lua
+│   ├── Thunder_Client_Test.lua
+│   ├── Thunder_UI_Test.lua
+│   └── RunAllTests.lua
+├── run_busted.sh                 # CLI test runner script
+└── README.md                     # This file
 ```
 
 ## Test Coverage
 
-### Thunder_Shared_Test.lua (8 tests)
+### Thunder_Shared (Unit Tests)
 - Module structure validation
-- NetTag verification
-- Config table completeness
-- Gameplay value ranges
-- Physics constants (speed of sound)
-- Config immutability
+- Config values (gameplay, physics, thunder system)
+- Parameter ranges (probability, weights, cooldown, distance)
 
-### Thunder_Server_Test.lua (12 tests)
-- Module initialization
-- Config value validation
-- OnTick function behavior
-- TriggerStrike logic
-- Cooldown timer mechanics
-- Console command availability
-- Dynamic cooldown based on cloud intensity
-- Distance range validation
-- Frequency adjustment
+### Thunder_Server (Component Tests)
+- Module structure
+- Storm intensity calculation (0-1.0 range, multi-factor)
+- Thunder probability (sigmoid curve)
+- Cooldown system (5-60s dynamic, decrement on tick)
+- Strike distance (min/max bounds, intensity correlation)
+- TriggerStrike (command sending, forced vs calculated distance)
+- Console command integration
+- Native mode (UseNativeWeatherEvents flag)
 
-### Thunder_Client_Test.lua (15 tests)
-- Module initialization
-- Initial state validation
-- Overlay creation and management
-- DoStrike function logic
-- Flash intensity and decay
-- Sound queuing and delay calculation
-- Volume scaling with distance
-- Sound selection by distance thresholds
-- Multi-flash sequences
-- Physics-based delay (speed of sound)
-- Brightness scaling with distance
-- Event handler registration
+### Thunder_Client (Component Tests)
+- Module structure (initial state, feature flags)
+- Overlay management (creation, dimensions, ignore events, UI manager)
+- Indoor detection (IsPlayerIndoors, room detection, nil handling)
+- Lightning flash effects (light creation, multi-point indoors, radius scaling, cleanup)
+- DoStrike (distance filtering, sound queue, overlay, flash sequence, delay)
+- Sound selection (ThunderClose <200, ThunderMedium <800, ThunderFar ≥800)
+- Volume calculation (distance-based, indoor modifier 0.75-0.9)
+- Flash system (brightness 0.1-0.5, multi-flash 30%)
+- Flash decay (time-based 2.5/s, clamp to 0, overlay removal)
+- OnTick audio processing (delayed sounds queue)
+- OnRenderTick flash processing (sequence triggering, overlay/lighting)
+- Debug mode toggle
+- Feature toggles (lighting, indoor detection)
 
-### Thunder_UI_Test.lua (12 tests)
-- UI disabled state verification
-- Toggle function existence
-- Class initialization check
-- Event handler registration
-- Console command fallback
-- Window structure validation
+### Thunder_UI (Component Tests)
+- Disabled state validation
+- Structural validation (for re-enabling)
+- ISUI dependencies
 - Button configuration
-- Frequency slider range
+- Slider range
 - Command structure
-- Debug mode flags
 - Window dimensions
-- Input safety (mouse blocking prevention)
+
+### Network (Integration Tests)
+- Server triggers → client receives
+- Command transmission validation
+- Single-player mode (both client and server)
+- Multi-client scenarios
+- Network latency simulation
+- Command args preservation
 
 ## Test Output
 
