@@ -65,6 +65,64 @@ cd "Thunderstorms v2/Contents/mods/Thunderstorms/42.13/media/lua/tests"
 
 See `tests/README.md` for detailed testing documentation.
 
+## 📋 Command Reference
+
+### Test Commands (CLI)
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `./run_busted.sh` | Run all tests with colored output | `cd tests && ./run_busted.sh` |
+| `busted spec/unit/` | Run unit tests only (100% passing) | `lua5.1 /usr/.../busted spec/unit/` |
+| `busted spec/component/` | Run component tests (server, client, UI) | `lua5.1 /usr/.../busted spec/component/` |
+| `busted spec/integration/` | Run integration tests (networking) | `lua5.1 /usr/.../busted spec/integration/` |
+| `busted <file>` | Run specific test file | `busted spec/unit/Thunder_Shared_spec.lua` |
+
+### Lua Console Commands (In-Game)
+
+Press `` ` `` or `~` to open the Lua console, then enter:
+
+#### Thunder Control Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `ForceThunder(distance)` | Trigger thunder at specific distance via server | `ForceThunder(500)` |
+| `TestThunder(distance)` | Test thunder effect (may call server in SP) | `TestThunder(1000)` |
+| `TestThunderClient(distance)` | Test thunder client-side only (guaranteed) | `TestThunderClient(750)` |
+| `SetThunderFrequency(multiplier)` | Adjust thunder frequency (0.1-5.0) | `SetThunderFrequency(2.0)` |
+| `SetThunderMultiplier(multiplier)` | Alias for SetThunderFrequency | `SetThunderMultiplier(1.5)` |
+| `GetStormIntensity()` | Display current storm analysis | `GetStormIntensity()` |
+
+#### Debug & Feature Toggles
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `ThunderToggleDebug()` | Toggle debug logging on/off | `ThunderToggleDebug(true)` |
+| `ThunderToggleLighting()` | Toggle dynamic lightning lights | `ThunderToggleLighting(false)` |
+| `ThunderToggleIndoorDetection()` | Toggle indoor sound muffling | `ThunderToggleIndoorDetection(true)` |
+| `SetNativeMode(enabled)` | Sync with game's internal weather | `SetNativeMode(true)` |
+
+#### Weather Diagnostics
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `getClimateManager():getCloudIntensity()` | Check current cloud intensity (0-1) | Returns: `0.75` |
+| `getClimateManager():getRainIntensity()` | Check current rain intensity (0-1) | Returns: `0.60` |
+| `getClimateManager():getWindIntensity()` | Check current wind intensity (0-1) | Returns: `0.40` |
+
+#### Legacy Test Commands (In-Game)
+
+| Command | Description |
+|---------|-------------|
+| `require "tests/legacy/RunAllTests"` | Run all legacy in-game tests |
+| `require "tests/legacy/Thunder_Shared_Test"` | Run shared config tests |
+| `require "tests/legacy/Thunder_Server_Test"` | Run server tests |
+| `require "tests/legacy/Thunder_Client_Test"` | Run client tests |
+
+**Note:** Distance is measured in tiles. Recommended ranges:
+- Close: 50-200 tiles
+- Medium: 200-800 tiles
+- Far: 800-8000 tiles (max hearing distance)
+
 ## 📝 Credits
 
 *   Developed by [FelipeFRL]
