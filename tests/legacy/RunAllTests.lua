@@ -62,10 +62,8 @@ end
 -- Run client tests (only on client)
 if not isServer() then
     runTest("Thunder_Client", "tests/Thunder_Client_Test")
-    runTest("Thunder_UI", "tests/Thunder_UI_Test")
 else
     print("⚠ Skipping Thunder_Client tests (server side)")
-    print("⚠ Skipping Thunder_UI tests (server side)")
 end
 
 -- Print final summary

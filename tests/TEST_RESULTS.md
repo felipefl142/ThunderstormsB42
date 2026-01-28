@@ -36,12 +36,11 @@ Success Rate: 68% overall
   - Time-based calculations
 - **Status: Framework Complete, Needs Mock Refinements**
 
-### ⚠️ UI Component Tests (60% Success)
-**spec/component/Thunder_UI_spec.lua**
-- **9 successes / 5 failures / 1 error**
-- Validates disabled state correctly
-- Structural tests for future re-enabling pass
-- **Status: Working as Expected (UI is disabled)**
+### ❌ UI Component Tests (REMOVED)
+**spec/component/Thunder_UI_spec.lua** - **REMOVED**
+- Thunder_UI.lua module and all associated tests completely removed from codebase
+- All user interaction now handled via console commands only
+- **Status: No longer applicable**
 
 ### ⚠️ Integration Tests (54% Success)
 **spec/integration/network_spec.lua**

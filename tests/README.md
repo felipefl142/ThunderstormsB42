@@ -62,7 +62,6 @@ Or individual suites:
 require "tests/legacy/Thunder_Shared_Test"
 require "tests/legacy/Thunder_Server_Test"
 require "tests/legacy/Thunder_Client_Test"
-require "tests/legacy/Thunder_UI_Test"
 ```
 
 ## Test Structure
@@ -78,15 +77,13 @@ tests/
 │   │   └── Thunder_Shared_spec.lua
 │   ├── component/                # Component tests (related functions)
 │   │   ├── Thunder_Server_spec.lua
-│   │   ├── Thunder_Client_spec.lua
-│   │   └── Thunder_UI_spec.lua
+│   │   └── Thunder_Client_spec.lua
 │   └── integration/              # Integration tests (client-server)
 │       └── network_spec.lua
 ├── legacy/                       # Backward compatibility
 │   ├── Thunder_Shared_Test.lua
 │   ├── Thunder_Server_Test.lua
 │   ├── Thunder_Client_Test.lua
-│   ├── Thunder_UI_Test.lua
 │   └── RunAllTests.lua
 ├── run_busted.sh                 # CLI test runner script
 └── README.md                     # This file
@@ -123,15 +120,6 @@ tests/
 - OnRenderTick flash processing (sequence triggering, overlay/lighting)
 - Debug mode toggle
 - Feature toggles (lighting, indoor detection)
-
-### Thunder_UI (Component Tests)
-- Disabled state validation
-- Structural validation (for re-enabling)
-- ISUI dependencies
-- Button configuration
-- Slider range
-- Command structure
-- Window dimensions
 
 ### Network (Integration Tests)
 - Server triggers → client receives
@@ -206,7 +194,6 @@ When adding new features to the mod:
 
 ## Known Limitations
 
-- UI tests are structural only (UI is currently disabled)
 - Some tests require mocking of PZ API functions
 - Visual and audio effects cannot be fully validated programmatically
 - Network message sending is mocked (actual server communication not tested)

@@ -53,10 +53,7 @@ The mod uses Project Zomboid's client-server architecture with networked events:
 3. **Shared (`Thunder_Shared.lua`):**
    - Contains shared configuration (currently minimal)
 
-4. **UI (`Thunder_UI.lua`):**
-   - **CURRENTLY DISABLED** (early return at line 3)
-   - UI was causing game-breaking bugs in Build 42.13
-   - Console commands are the primary interface
+All user interaction is via console commands; no UI components are included.
 
 ### Key Systems
 
@@ -171,12 +168,6 @@ print(getClimateManager():getCloudIntensity())
 4. **Overlay mouse blocking** - Overlays added to UI manager permanently block input; must add/remove dynamically
 5. **Guard clause loading issue** - Calling `isClient()` or `isServer()` in string concatenation during file load can cause silent failures; use guard clauses before any complex operations
 
-### UI State
-The Thunder UI (`Thunder_UI.lua`) is **completely disabled** via early return. Attempts to re-enable require:
-- Fixing Build 42.13 API compatibility issues
-- Preventing UI from breaking game mouse/keyboard input
-- Testing thoroughly before uncommenting event handlers at end of file
-
 ## Sound File Conventions
 
 Sound files in `media/sound/`:
@@ -198,7 +189,6 @@ Enable debug logging using `ThunderToggleDebug()` console command (renamed from 
 Console output prefixes:
 - `[ThunderServer]` - Server-side events
 - `[ThunderClient]` - Client-side VFX/SFX
-- `[ThunderUI]` - UI events (currently just "DISABLED" message)
 
 Debug mode shows:
 - File loading status and guard clause checks
@@ -236,8 +226,7 @@ tests/
 │   │   └── Thunder_Shared_spec.lua
 │   ├── component/           # Component tests (200+ tests)
 │   │   ├── Thunder_Server_spec.lua
-│   │   ├── Thunder_Client_spec.lua
-│   │   └── Thunder_UI_spec.lua
+│   │   └── Thunder_Client_spec.lua
 │   └── integration/         # Integration tests
 │       └── network_spec.lua
 ├── legacy/                  # Original test files (backward compatible)
@@ -272,7 +261,6 @@ lua5.1 /usr/lib/luarocks/rocks-5.1/busted/2.3.0-1/bin/busted spec/
 - **Thunder_Shared:** 29 unit tests (100% passing) - Config validation, parameter ranges
 - **Thunder_Server:** 50 component tests (90% passing) - Weather calculations, cooldown, distance
 - **Thunder_Client:** 100+ component tests - VFX, sound, overlay, lighting, indoor detection
-- **Thunder_UI:** 25+ tests - Disabled state validation, structural tests
 - **Integration:** 30+ tests - Client-server communication, network commands
 
 ### Mock System
@@ -312,8 +300,7 @@ To upload to Steam Workshop:
 1. Update version in `workshop.txt`
 2. Test both manual commands and automatic thunder in-game
 3. Verify VFX (flash) and SFX (sound) work correctly
-4. Check UI doesn't break game controls (currently disabled for safety)
-5. Upload via Project Zomboid's built-in workshop tools or SteamCMD
+4. Upload via Project Zomboid's built-in workshop tools or SteamCMD
 
 ## Development Notes
 
@@ -389,7 +376,7 @@ To upload to Steam Workshop:
 - **Fixed PlayWorldSound radius** increased to 1000 for better audio coverage
 
 ### v1.3 (Jan 2026) - Build 42.13 Compatibility
-- **Disabled Thunder_UI.lua** to resolve game-breaking syntax crash
+- **Removed Thunder_UI.lua** (was causing game-breaking bugs; console commands are the primary interface)
 - **Migrated to Build 42.13 API** using `render()` instead of deprecated `prerender()`
 - **Added dynamic overlay management** to prevent mouse/keyboard blocking
 - **Implemented ISUIElement explicit require** for B42.13 compatibility
