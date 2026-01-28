@@ -37,27 +37,27 @@ module MyThunder
         category = Ambient,
         is3D = true,
         master = Ambient,
-        range = 1000.0,
+        range = 1200.0,
         volume = 2.0,
         clip
         {
-            file = media/sound/Close-long.ogg
+            file = sound/Close-long.ogg
         }
         clip
         {
-            file = media/sound/Close-long-2.ogg
+            file = sound/Close-long-2.ogg
         }
         clip
         {
-            file = media/sound/Close-medium2.ogg
+            file = sound/Close-medium2.ogg
         }
         clip
         {
-            file = media/sound/Close-short.ogg
+            file = sound/Close-short.ogg
         }
         clip
         {
-            file = media/sound/Close-short2.ogg
+            file = sound/Close-short2.ogg
         }
     }
 
@@ -66,15 +66,15 @@ module MyThunder
         category = Ambient,
         is3D = true,
         master = Ambient,
-        range = 2000.0,
+        range = 3400.0,
         volume = 2.0,
         clip
         {
-            file = media/sound/MediumFar-long.ogg
+            file = sound/MediumFar-long.ogg
         }
         clip
         {
-            file = media/sound/MediumFar-short.ogg
+            file = sound/MediumFar-short.ogg
         }
     }
 
@@ -83,19 +83,19 @@ module MyThunder
         category = Ambient,
         is3D = true,
         master = Ambient,
-        range = 4000.0,
+        range = 8000.0,
         volume = 2.0,
         clip
         {
-            file = media/sound/Far-medium.ogg
+            file = sound/Far-medium.ogg
         }
         clip
         {
-            file = media/sound/Far-medium2.ogg
+            file = sound/Far-medium2.ogg
         }
         clip
         {
-            file = media/sound/Far-short.ogg
+            file = sound/Far-short.ogg
         }
     }
 }
