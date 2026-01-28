@@ -248,10 +248,10 @@ function ThunderClient.DoStrike(args)
     -- VISUALS: Ensure overlay exists
     ThunderClient.CreateOverlay()
 
-    -- Closer = Brighter (Max 0.5 alpha, Min 0.1)
-    local brightness = (1.0 - (distance / 4700)) * 0.5
-    if brightness < 0.1 then brightness = 0.1 end
-    if brightness > 0.5 then brightness = 0.5 end
+    -- Closer = Brighter (Max 0.3 alpha, Min 0.05)
+    local brightness = (1.0 - (distance / 4700)) * 0.3
+    if brightness < 0.05 then brightness = 0.05 end
+    if brightness > 0.3 then brightness = 0.3 end
 
     -- Queue multi-flash sequence
     -- Flash pattern: 25% single, 50% double, 25% triple flash
@@ -466,45 +466,36 @@ print("[ThunderClient] Events registered successfully (where available)")
 --- Usage: ForceThunder(200) or ForceThunder() for random distance
 function ForceThunder(dist)
     dist = dist or ZombRand(50, 2500)
-    print("[ThunderClient] Forcing thunder strike at " .. tostring(dist) .. " tiles")
+    print("[ThunderClient] Requesting ForceThunder strike at " .. tostring(dist) .. " tiles")
 
     local player = getPlayer()
     if not player then
-        print("[ThunderClient] ERROR: No player found!")
+        print("[ThunderClient] ERROR: No player found! Cannot send command.")
         return false
     end
 
+    -- In SP, this sends to internal server. In MP, sends to server.
     sendClientCommand(player, "ThunderMod", "ForceStrike", {dist = dist})
     return true
 end
 
---- Test thunder effect directly on client (bypasses server, for debugging)
---- Usage: TestThunderClient(200) or TestThunderClient() for default
---- This function is client-only and avoids server/client naming conflicts
-function TestThunderClient(dist)
-    dist = dist or 500
-    print("[ThunderClient] Testing thunder effect at " .. tostring(dist) .. " tiles (client-side, direct)")
-
-    ThunderClient.DoStrike({dist = dist})
-    return true
-end
-
---- Test thunder effect directly on client (bypasses server, for debugging)
---- Usage: TestThunder(200) or TestThunder() for default
---- NOTE: In single player, this may conflict with server's TestThunder. Use TestThunderClient() instead.
+--- Test thunder effect directly on client (bypasses server, for debugging visuals/sound)
+--- Usage: TestThunder(200) or TestThunder()
 function TestThunder(dist)
     dist = dist or 500
-    print("[ThunderClient] Testing thunder effect at " .. tostring(dist) .. " tiles (client-side)")
-
+    print("[ThunderClient] TestThunder executing locally at " .. tostring(dist) .. " tiles")
     ThunderClient.DoStrike({dist = dist})
     return true
 end
+
+-- Alias for clarity
+TestThunderClient = TestThunder
 
 --- Set thunder frequency via server
 --- Usage: SetThunderFrequency(3.0)
 function SetThunderFrequency(freq)
     freq = freq or 1.0
-    print("[ThunderClient] Setting thunder frequency to " .. tostring(freq))
+    print("[ThunderClient] Requesting Thunder Frequency: " .. tostring(freq))
 
     local player = getPlayer()
     if not player then
@@ -568,11 +559,59 @@ function ThunderToggleIndoorDetection(enable)
 end
 
 print("[ThunderClient] Console commands:")
-print("  ForceThunder(dist)        - Trigger thunder at distance (via server)")
-print("  TestThunder(dist)         - Test thunder effect (may call server in SP)")
-print("  TestThunderClient(dist)   - Test thunder effect (client-only, guaranteed)")
-print("  SetThunderFrequency(f)    - Set frequency multiplier")
+print("  ForceThunder(dist)        - Trigger thunder via server (Syncs to all clients)")
+print("  TestThunder(dist)         - Test local thunder effect (Client-side only)")
+print("  SetThunderFrequency(f)    - Set frequency multiplier (e.g. 2.0 = double)")
 print("  SetNativeMode(bool)       - Toggle Native Mode (sync with game weather)")
-print("  ThunderToggleDebug(true/false) - Toggle debug logging")
-print("  ThunderToggleLighting(true/false) - Toggle dynamic lighting effects")
-print("  ThunderToggleIndoorDetection(true/false) - Toggle indoor sound muffling")
+print("  ThunderToggleDebug(bool)  - Toggle debug logging")
+
+--- Debug Audio Function
+function ThunderTestSound()
+    print("[ThunderDebug] Starting sound test (Diagnostic Mode)...")
+    local sm = getSoundManager()
+    
+    print("[ThunderDebug] 1. Control: Playing 'UIPauseMenuEnter' (2D)")
+    sm:PlaySound("UIPauseMenuEnter", false, 1.0)
+    
+    print("[ThunderDebug] 2. Checking Module 'MyThunder'...")
+    local testSounds = {
+        {name="MyThunder/ThunderTestPath1", desc="Path: sound/"},
+        {name="MyThunder/ThunderTestPath2", desc="Path: media/sound/"},
+        {name="MyThunder/ThunderTestPath3", desc="Path: root"}
+    }
+    
+    for i, snd in ipairs(testSounds) do
+        print("[ThunderDebug] Testing " .. snd.desc .. " (" .. snd.name .. ")...")
+        local result = sm:PlaySound(snd.name, false, 1.0)
+        if result then
+            print("[ThunderDebug]   -> SUCCESS! PlaySound returned object. Sound DEFINITION exists.")
+        else
+            print("[ThunderDebug]   -> FAILED. PlaySound returned nil. Definition not found.")
+        end
+    end
+
+    print("[ThunderDebug] --- FILE SYSTEM CHECK ---")
+    
+    -- Control: Check if we can read THIS very file (which we know is loaded)
+    local selfPath = "media/lua/client/Thunder_Client.lua"
+    local reader = getFileReader(selfPath, false)
+    if reader then
+        print("[ThunderDebug] CONTROL: Found '" .. selfPath .. "' (Read access OK)")
+        reader:close()
+    else
+        print("[ThunderDebug] CONTROL: Could NOT find '" .. selfPath .. "' (getFileReader root mismatch?)")
+    end
+    
+    -- Target: Check the sound script
+    local targetPath = "media/scripts/Thunderstorms_sounds.txt"
+    local reader2 = getFileReader(targetPath, false)
+    if reader2 then
+        print("[ThunderDebug] TARGET: Found '" .. targetPath .. "'")
+        reader2:close()
+    else
+        print("[ThunderDebug] TARGET: Could NOT find '" .. targetPath .. "'")
+    end
+
+    print("[ThunderDebug] Test complete.")
+end
+print("  ThunderTestSound()        - Run audio diagnostics")

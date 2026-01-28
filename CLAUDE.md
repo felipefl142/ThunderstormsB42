@@ -155,6 +155,9 @@ ThunderToggleIndoorDetection(true)   -- Enable indoor muffling
 ThunderToggleIndoorDetection(false)  -- Disable indoor muffling
 ThunderToggleIndoorDetection()       -- Toggle current state
 
+-- Run audio diagnostics
+ThunderTestSound()
+
 -- Check current cloud intensity
 print(getClimateManager():getCloudIntensity())
 ```

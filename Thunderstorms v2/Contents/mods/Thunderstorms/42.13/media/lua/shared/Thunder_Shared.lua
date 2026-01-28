@@ -16,8 +16,8 @@ ThunderMod.Config = {
 ThunderMod.Config.Thunder = {
     -- PROBABILITY TUNING
     probabilityMultiplier = 1.0,
-    sigmoidSteepness = 8.0,
-    sigmoidMidpoint = 0.30,
+    sigmoidSteepness = 6.0,
+    sigmoidMidpoint = 0.20,
 
     -- INTENSITY WEIGHTS
     cloudWeight = 0.50,
@@ -26,12 +26,12 @@ ThunderMod.Config.Thunder = {
     synergyWeight = 0.05,
 
     -- EXPONENTS
-    cloudExponent = 1.5,
+    cloudExponent = 1.2,
     rainExponent = 2.0,
     windExponent = 1.2,
 
     -- COOLDOWN
-    minCooldownSeconds = 5,
+    minCooldownSeconds = 3,
     maxCooldownSeconds = 60,
     cooldownDecayRate = 2.5,
     cooldownVariation = 0.15,

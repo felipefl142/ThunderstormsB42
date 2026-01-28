@@ -107,8 +107,8 @@ Build 42 is in active development. The devs keep changing APIs. It's like trying
 
 **What it does:**
 1. Checks weather every game tick (~1/60th of a second)
-2. If clouds > 20% intensity, rolls dice for thunder
-3. When thunder triggers, picks a random distance (50-8000 tiles)
+2. Calculates "Storm Intensity" based on clouds (50%), rain (35%), and wind (10%)
+3. Uses a sigmoid probability curve (S-curve) so thunder is rare in light rain but frequent in heavy storms
 4. Broadcasts "LightningStrike" command to all clients
 
 **Key code snippet (simplified):**
@@ -124,25 +124,21 @@ function ThunderServer.OnTick()
         return
     end
 
-    local clouds = getClimateManager():getCloudIntensity()
-
-    if clouds > 0.2 then
-        -- Chance increases with cloud intensity
-        local chance = 0.05 * clouds  -- 0.05% at 100% clouds
-
-        if ZombRandFloat(0, 100) < chance then
-            ThunderServer.TriggerStrike()  -- BOOM!
-        end
+    local intensity = ThunderServer.CalculateStormIntensity()
+    local probability = ThunderServer.CalculateThunderProbability(intensity)
+    
+    if ZombRandFloat(0, 100) < probability then
+        ThunderServer.TriggerStrike(nil, intensity)  -- BOOM!
     end
 end
 ```
 
-**The cooldown system** is crucial. Without it, you'd hear thunder every second during storms. We use **dynamic cooldown**:
+**The cooldown system** is sophisticated. We use **dynamic cooldown** based on storm intensity:
 
-- Heavy storm (clouds = 1.0) → Minimum 10 seconds between strikes
-- Light storm (clouds = 0.2) → Up to ~24 seconds between strikes
+- Heavy storm (intensity = 1.0) → ~5 seconds between strikes
+- Light storm (intensity = 0.2) → Up to 60 seconds between strikes
 
-This creates natural pacing. Heavy storms feel intense, light storms feel ominous.
+This creates natural pacing. Heavy storms feel chaotic and dangerous, light storms feel ominous and slow.
 
 ### 🎨 Thunder_Client.lua: The Performer
 
@@ -151,9 +147,17 @@ This is where the magic happens. 386 lines of visual effects, audio timing, and 
 **The Flash System:**
 
 Think of the flash like a camera exposure:
-1. **Instant spike** → Brightness jumps to 0.1-0.5 alpha (based on distance)
+1. **Instant spike** → Brightness jumps to 0.1-0.6 alpha (based on distance)
 2. **Smooth decay** → Fades at 2.5 alpha units per second
 3. **Dynamic overlay** → Only added to UI during flash (critical!)
+
+**Flash Patterns:**
+We don't just flash once. Nature is messy.
+- **25%** Single flash (Snap!)
+- **50%** Double flash (Flicker-Boom)
+- **25%** Triple flash (Strobe-like intensity)
+
+Each sub-flash has randomized intensity (0.9x - 1.1x) and timing (40-100ms delay), making every lightning strike feel unique.
 
 **Why "only during flash"?**
 
@@ -529,15 +533,13 @@ local numFlashes = ZombRand(1, 5)  -- Too many!
 
 **Problem:** Players reported feeling dizzy. Four rapid flashes is a strobe light, not lightning.
 
-**Fix:**
+**Fix (Evolution):**
+First, we limited it to mostly single flashes. Later, we found that was *too* static. We settled on a weighted distribution:
+- 25% Single
+- 50% Double (The sweet spot)
+- 25% Triple
 
-```lua
--- Mostly single flash, occasional double
-local numFlashes = 1
-if ZombRand(100) < 30 then numFlashes = 2 end  -- 30% chance
-```
-
-**Lesson:** **Realism ≠ maximum intensity.** Sometimes less is more. Listen to user feedback.
+**Lesson:** **Realism ≠ maximum intensity.** But simple randomness is boring. A weighted curve (bell curve-ish) feels most natural.
 
 ### Bug #5: Events.OnThunder Doesn't Exist (version compatibility)
 
@@ -723,27 +725,26 @@ ThunderServer.cooldown = 0  -- Namespaced
 
 ## If I Could Do It Again
 
-### Thing #1: Automated Testing
+### Thing #1: Automated Testing (Which We Did!)
 
-We tested manually every time. Type `ForceThunder(200)`, check flash, wait for sound. Repeat 50 times.
+**Update:** We actually went back and did this. We implemented a full test suite using **Busted**.
 
-**Better approach:** Automated tests.
+We tested manually for weeks. Type `ForceThunder(200)`, check flash, wait for sound. Repeat.
+
+**The Solution:**
+We built a mock system that simulates the Project Zomboid API (`getClimateManager`, `getSoundManager`). Now we run 200+ tests in 30 milliseconds.
 
 ```lua
-function TestSuite.TestSoundDelay()
-    local distance = 1000
-    local expectedDelay = 1000 / 340  -- ~2.94 seconds
-
-    ThunderClient.DoStrike({dist = distance})
-
-    -- Check that sound is queued for ~2.94 seconds from now
-    assert(#ThunderClient.delayedSounds == 1)
-    local actualDelay = (delayedSounds[1].time - getTimestampMs()) / 1000
-    assert(math.abs(actualDelay - expectedDelay) < 0.1)  -- Within 0.1s
-end
+it("should calculate sound delay based on distance", function()
+  ThunderClient.DoStrike({ dist = 340 }) -- 340 tiles
+  
+  -- Sound should be queued exactly 1 second later (340 / 340m/s)
+  local sound = ThunderClient.delayedSounds[1]
+  assert.equals(PZMock.currentTime + 1000, sound.time)
+end)
 ```
 
-**Lesson:** Manual testing is necessary, but **automated tests catch regressions**.
+**Lesson:** Manual testing is necessary, but **automated tests catch regressions instantly.** Don't wait until v1.0 to write tests.
 
 ### Thing #2: Earlier Version Management
 

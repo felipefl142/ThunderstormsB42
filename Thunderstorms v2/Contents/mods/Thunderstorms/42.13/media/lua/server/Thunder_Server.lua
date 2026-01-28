@@ -195,11 +195,11 @@ function ServerForceThunder(dist)
     return true
 end
 
---- Test thunder effect (console-accessible version)
---- Usage: TestThunder(200) or TestThunder() for default distance
-function TestThunder(dist)
+--- Test thunder effect (server side)
+--- Usage: ServerTestThunder(200)
+function ServerTestThunder(dist)
     dist = dist or 500
-    print("[ThunderServer] TestThunder called with dist=" .. tostring(dist))
+    print("[ThunderServer] ServerTestThunder called with dist=" .. tostring(dist))
     ThunderServer.TriggerStrike(dist)
     return true
 end
@@ -235,14 +235,23 @@ function GetStormIntensity()
 end
 
 --- Force thunder strike from console
---- Usage: ForceThunder(200) or ForceThunder() for random distance
-function ForceThunder(dist)
+--- Usage: ForceThunder(200) or ForceThunder() or ServerForceThunder(200)
+function ServerForceThunder(dist)
     dist = dist or ThunderServer.CalculateStrikeDistance(ThunderServer.CalculateStormIntensity())
-    print("[ThunderServer] ForceThunder called with dist=" .. tostring(dist))
+    print("[ThunderServer] ServerForceThunder called with dist=" .. tostring(dist))
     ThunderServer.TriggerStrike(dist)
     return true
 end
 
+-- Compatibility alias
+ForceThunderServer = ServerForceThunder
+
+-- Only define generic ForceThunder on Dedicated Server (where no client exists)
+if isServer() and not isClient() then
+    ForceThunder = ServerForceThunder
+    TestThunder = function(dist) return ThunderServer.TriggerStrike(dist or 500) end
+end
+
 print("[ThunderServer] ========== LOADED (Build 42.13) ==========")
-print("[ThunderServer] Console commands: ForceThunder(dist), TestThunder(dist), SetThunderFrequency(mult), GetStormIntensity()")
-print("[ThunderServer] Type any of these commands in the console to test thunder effects")
+print("[ThunderServer] Server commands: ServerForceThunder(dist), SetThunderFrequency(mult), GetStormIntensity()")
+print("[ThunderServer] Note: Use ForceThunder(dist) from client/player console")

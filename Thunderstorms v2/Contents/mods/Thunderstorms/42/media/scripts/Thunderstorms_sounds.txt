@@ -1,17 +1,64 @@
 module MyThunder
 {
+    // DEBUG SOUNDS
+    sound ThunderTestPath1
+    {
+        category = Ambient,
+        is3D = false,
+        clip
+        {
+            file = sound/Close-long.ogg
+        }
+    }
+
+    sound ThunderTestPath2
+    {
+        category = Ambient,
+        is3D = false,
+        clip
+        {
+            file = media/sound/Close-long.ogg
+        }
+    }
+
+    sound ThunderTestPath3
+    {
+        category = Ambient,
+        is3D = false,
+        clip
+        {
+            file = Close-long.ogg
+        }
+    }
+
+    // MAIN SOUNDS
     sound ThunderClose
     {
         category = Ambient,
         is3D = true,
         master = Ambient,
-        range = 800.0,
+        range = 1000.0,
         volume = 2.0,
-        clip { file = media/sound/Close-long.ogg, }
-        clip { file = media/sound/Close-long-2.ogg, }
-        clip { file = media/sound/Close-medium2.ogg, }
-        clip { file = media/sound/Close-short.ogg, }
-        clip { file = media/sound/Close-short2.ogg, }
+        clip
+        {
+            file = media/sound/Close-long.ogg
+        }
+        clip
+        {
+            file = media/sound/Close-long-2.ogg
+        }
+        clip
+        {
+            file = media/sound/Close-medium2.ogg
+        }
+        clip
+        {
+            file = media/sound/Close-short.ogg
+        }
+        clip
+        {
+            file = media/sound/Close-short2.ogg
+        }
     }
 
     sound ThunderMedium
@@ -19,10 +66,16 @@ module MyThunder
         category = Ambient,
         is3D = true,
         master = Ambient,
-        range = 1500.0,
+        range = 2000.0,
         volume = 2.0,
-        clip { file = media/sound/MediumFar-long.ogg, }
-        clip { file = media/sound/MediumFar-short.ogg, }
+        clip
+        {
+            file = media/sound/MediumFar-long.ogg
+        }
+        clip
+        {
+            file = media/sound/MediumFar-short.ogg
+        }
     }
 
     sound ThunderFar
@@ -30,10 +83,19 @@ module MyThunder
         category = Ambient,
         is3D = true,
         master = Ambient,
-        range = 3000.0,
+        range = 4000.0,
         volume = 2.0,
-        clip { file = media/sound/Far-medium.ogg, }
-        clip { file = media/sound/Far-medium2.ogg, }
-        clip { file = media/sound/Far-short.ogg, }
+        clip
+        {
+            file = media/sound/Far-medium.ogg
+        }
+        clip
+        {
+            file = media/sound/Far-medium2.ogg
+        }
+        clip
+        {
+            file = media/sound/Far-short.ogg
+        }
     }
 }
